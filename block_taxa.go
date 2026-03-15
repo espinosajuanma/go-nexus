@@ -1,9 +1,10 @@
 package nexus
 
 import (
-	"fmt"
+	"bytes"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 // init automatically registers the TAXA block with the core parser.
@@ -12,6 +13,19 @@ func init() {
 		return &TaxaBlock{}
 	})
 }
+
+// The template for the TAXA block
+const taxaTmplStr = `BEGIN TAXA;
+	DIMENSIONS NTAX={{.Dimensions.Count}};
+	TAXLABELS
+{{- range .TaxLabels}}
+		{{.}}
+{{- end}}
+	;
+END;
+`
+
+var taxaTmpl = template.Must(template.New("taxa").Parse(taxaTmplStr))
 
 // TaxaBlock specifies information about taxa.
 type TaxaBlock struct {
@@ -71,13 +85,11 @@ func (t *TaxaBlock) Parse(s *Scanner) error {
 
 // Render implements the Block interface for TaxaBlock.
 func (t *TaxaBlock) Render() string {
-	var b strings.Builder
-	b.WriteString("BEGIN TAXA;\n")
-	b.WriteString(fmt.Sprintf("\tDIMENSIONS NTAX=%d;\n", t.Dimensions.Count))
-	b.WriteString("\tTAXLABELS\n")
-	for _, label := range t.TaxLabels {
-		b.WriteString(fmt.Sprintf("\t\t%s\n", label))
+	var buf bytes.Buffer
+	// Execute the template, passing the TaxaBlock struct (.) as the data payload
+	if err := taxaTmpl.Execute(&buf, t); err != nil {
+		// If template execution fails, return a NEXUS comment with the error
+		return "[ERROR rendering TAXA block: " + err.Error() + "]\n"
 	}
-	b.WriteString("\t;\nEND;\n\n")
-	return b.String()
+	return buf.String()
 }

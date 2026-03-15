@@ -1,10 +1,35 @@
 package nexus
 
 import (
-	"fmt"
+	"bytes"
+	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 )
+
+// The template for the CHARACTERS block [cite: 348-377]
+const charsTmplStr = `BEGIN CHARACTERS;
+	DIMENSIONS NCHAR={{.Dimensions.NChar}};
+{{- if or .Format.DataType .Format.Missing .Format.Gap .Format.Symbols}}
+	FORMAT{{if .Format.DataType}} DATATYPE={{.Format.DataType}}{{end}}{{if .Format.Missing}} MISSING={{.Format.Missing}}{{end}}{{if .Format.Gap}} GAP={{.Format.Gap}}{{end}}{{if .Format.Symbols}} SYMBOLS="{{.Format.Symbols}}"{{end}};
+{{- end}}
+{{- if .SortedLabels}}
+	CHARSTATELABELS
+{{- range .SortedLabels}}
+		{{.ID}} {{.Name}},
+{{- end}}
+	;
+{{- end}}
+	MATRIX
+{{- range .Matrix}}
+	{{.TaxonName}}	{{.Data}}
+{{- end}}
+	;
+END;
+`
+
+var charsTmpl = template.Must(template.New("characters").Parse(charsTmplStr))
 
 // init automatically registers the CHARACTERS block with the core parser.
 func init() {
@@ -97,43 +122,36 @@ func (c *CharactersBlock) Parse(s *Scanner) error {
 
 // Render implements the Block interface for CharactersBlock.
 func (c *CharactersBlock) Render() string {
-	var b strings.Builder
-	b.WriteString("BEGIN CHARACTERS;\n")
-	b.WriteString(fmt.Sprintf("\tDIMENSIONS NCHAR=%d;\n", c.Dimensions.NChar))
+	// Sort the map keys to ensure deterministic output
+	type labelPair struct {
+		ID   int
+		Name string
+	}
+	var sortedLabels []labelPair
+	for id, name := range c.CharStateLabels {
+		sortedLabels = append(sortedLabels, labelPair{ID: id, Name: name})
+	}
+	sort.Slice(sortedLabels, func(i, j int) bool {
+		return sortedLabels[i].ID < sortedLabels[j].ID
+	})
 
-	// Format command setup
-	var formatArgs []string
-	if c.Format.DataType != "" {
-		formatArgs = append(formatArgs, fmt.Sprintf("DATATYPE=%s", c.Format.DataType))
-	}
-	if c.Format.Missing != "" {
-		formatArgs = append(formatArgs, fmt.Sprintf("MISSING=%s", c.Format.Missing))
-	}
-	if c.Format.Gap != "" {
-		formatArgs = append(formatArgs, fmt.Sprintf("GAP=%s", c.Format.Gap))
-	}
-	if c.Format.Symbols != "" {
-		formatArgs = append(formatArgs, fmt.Sprintf("SYMBOLS=\"%s\"", c.Format.Symbols))
-	}
-	if len(formatArgs) > 0 {
-		b.WriteString(fmt.Sprintf("\tFORMAT %s;\n", strings.Join(formatArgs, " ")))
-	}
-
-	// Charstatelabels
-	if len(c.CharStateLabels) > 0 {
-		b.WriteString("\tCHARSTATELABELS\n")
-		for idx, name := range c.CharStateLabels {
-			b.WriteString(fmt.Sprintf("\t\t%d %s,\n", idx, name))
-		}
-		b.WriteString("\t;\n")
+	// 2. Create an anonymous struct to feed the template
+	templateData := struct {
+		Dimensions   Dimensions
+		Format       Format
+		SortedLabels []labelPair
+		Matrix       []MatrixRow
+	}{
+		Dimensions:   c.Dimensions,
+		Format:       c.Format,
+		SortedLabels: sortedLabels,
+		Matrix:       c.Matrix,
 	}
 
-	// Matrix
-	b.WriteString("\tMATRIX\n")
-	for _, row := range c.Matrix {
-		b.WriteString(fmt.Sprintf("\t%s\t%s\n", row.TaxonName, row.Data))
+	// 3. Render the template
+	var buf bytes.Buffer
+	if err := charsTmpl.Execute(&buf, templateData); err != nil {
+		return "[ERROR rendering CHARACTERS block: " + err.Error() + "]\n"
 	}
-	b.WriteString("\t;\nEND;\n\n")
-
-	return b.String()
+	return buf.String()
 }
