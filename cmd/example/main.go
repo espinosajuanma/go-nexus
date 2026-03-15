@@ -43,8 +43,14 @@ func main() {
 		fmt.Println("-- No CHARACTERS Block found --")
 	}
 
+	if trees, ok := nexus.GetBlock[*nexus.TreesBlock](nex); ok {
+		fmt.Println("-- Found a TREES Block --")
+		fmt.Printf("Trees Count: %d\n", len(trees.Trees))
+	} else {
+		fmt.Println("-- No TREES Block found --")
+	}
+
 	fmt.Println("\n=== 2. Exporting NEXUS Data ===")
-	// 3. Export the structs back into standard NEXUS format to stdout
 	err = nex.Export(os.Stdout)
 	if err != nil {
 		log.Fatalf("Failed to export NEXUS file: %v", err)

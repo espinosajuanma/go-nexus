@@ -39,3 +39,14 @@ BEGIN CHARACTERS;
 	mouse 11111111000011110001
     ;
 END;
+
+BEGIN TREES;
+  TRANSLATE
+    1 fish,
+    2 frog,
+    3 snake,
+    4 mouse
+  ;
+  TREE tree1 = [&U] ((1,2),(3,4));
+  TREE * tree2 = [&R] (fish,(frog,(snake,mouse)));
+END;
