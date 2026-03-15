@@ -77,7 +77,7 @@ func Parse(r io.Reader) (*Nexus, error) {
 func (n *Nexus) Export(w io.Writer) error {
 	fmt.Fprintf(w, "#NEXUS\n\n")
 	for _, block := range n.Blocks {
-		fmt.Fprint(w, block.Render())
+		fmt.Fprintf(w, "%s\n", block.Render())
 	}
 	return nil
 }

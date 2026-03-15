@@ -16,6 +16,9 @@ func init() {
 
 // The template for the TAXA block
 const taxaTmplStr = `BEGIN TAXA;
+{{- if .Title}}
+	TITLE {{.Title}};
+{{- end}}
 	DIMENSIONS NTAX={{.Dimensions.Count}};
 	TAXLABELS
 {{- range .TaxLabels}}
@@ -29,6 +32,7 @@ var taxaTmpl = template.Must(template.New("taxa").Parse(taxaTmplStr))
 
 // TaxaBlock specifies information about taxa.
 type TaxaBlock struct {
+	Title      string
 	Dimensions NTax
 	TaxLabels  []string
 }
@@ -52,6 +56,14 @@ func (t *TaxaBlock) Parse(s *Scanner) error {
 		}
 
 		switch cmd {
+		case "TITLE":
+			tokens, err := readUntilSemicolon(s)
+			if err != nil {
+				return err
+			}
+			if len(tokens) > 0 {
+				t.Title = strings.Join(tokens, " ")
+			}
 		case "DIMENSIONS":
 			tokens, err := readUntilSemicolon(s)
 			if err != nil {
