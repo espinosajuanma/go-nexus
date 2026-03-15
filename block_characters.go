@@ -20,6 +20,15 @@ const (
 	Continuous DataType = "CONTINUOUS"
 )
 
+// StateType tracks if a character is a single state, polymorphic, or uncertain.
+type StateType string
+
+const (
+	StateSingle      StateType = "SINGLE"
+	StatePolymorphic StateType = "POLYMORPHIC"
+	StateUncertain   StateType = "UNCERTAIN"
+)
+
 // The template for the CHARACTERS block [cite: 348-377]
 const charsTmplStr = `BEGIN CHARACTERS;
 {{- if .Title}}
@@ -38,7 +47,7 @@ const charsTmplStr = `BEGIN CHARACTERS;
 {{- end}}
 	MATRIX
 {{- range .Matrix}}
-	{{.TaxonName}}	{{range .States}}{{.Value}}{{end}}
+	{{.PaddedName}}{{range .States}}{{.Render}}{{end}}
 {{- end}}
 	;
 END;
@@ -51,10 +60,10 @@ func init() {
 	RegisterBlock("CHARACTERS", func() Block {
 		return &CharactersBlock{
 			Format: Format{
-				Missing: "?", // Default missing symbol
-				Gap:     "-", // User-requested default gap symbol
+				Missing: "?",
+				Gap:     "-",
 			},
-			CharStateLabels: make(map[int]string), // Safely initialize the map
+			CharStateLabels: make(map[int]string),
 		}
 	})
 }
@@ -82,25 +91,29 @@ type Format struct {
 
 // CharacterState holds individualized information about a single character state.
 type CharacterState struct {
-	Index int    // 1-based character number
-	Value string // The actual symbol/data (e.g., "A", "C", "-")
-	Label string // The associated CharStateLabel, if any
+	Index int
+	Type  StateType
+	Value []string
+	Label string
+}
+
+// Render formats the CharacterState back into its proper NEXUS representation.
+func (c CharacterState) Render() string {
+	valStr := strings.Join(c.Value, " ")
+	switch c.Type {
+	case StatePolymorphic:
+		return "(" + valStr + ")"
+	case StateUncertain:
+		return "{" + valStr + "}"
+	default:
+		return valStr
+	}
 }
 
 // MatrixRow holds the sequence/data for a single taxon.
 type MatrixRow struct {
 	TaxonName string
 	States    []CharacterState
-}
-
-func (r MatrixRow) String() string {
-	var buf bytes.Buffer
-	buf.WriteString(r.TaxonName)
-	buf.WriteString("\t")
-	for _, state := range r.States {
-		buf.WriteString(state.Value)
-	}
-	return buf.String()
 }
 
 // Parse implements the Block interface for CharactersBlock.
@@ -112,7 +125,6 @@ func (c *CharactersBlock) Parse(s *Scanner) error {
 		}
 
 		cmd := strings.ToUpper(token)
-		// Blocks end with an END or ENDBLOCK command
 		if cmd == "END" || cmd == "ENDBLOCK" {
 			return expectSemicolon(s)
 		}
@@ -169,7 +181,6 @@ func (c *CharactersBlock) Parse(s *Scanner) error {
 
 // Render implements the Block interface for CharactersBlock.
 func (c *CharactersBlock) Render() string {
-	// Sort the map keys to ensure deterministic output
 	type labelPair struct {
 		ID   int
 		Name string
@@ -182,22 +193,41 @@ func (c *CharactersBlock) Render() string {
 		return sortedLabels[i].ID < sortedLabels[j].ID
 	})
 
-	// Create an anonymous struct to feed the template
+	maxLen := 0
+	for _, row := range c.Matrix {
+		if len(row.TaxonName) > maxLen {
+			maxLen = len(row.TaxonName)
+		}
+	}
+
+	type templateMatrixRow struct {
+		PaddedName string
+		States     []CharacterState
+	}
+
+	var tmplMatrix []templateMatrixRow
+	for _, row := range c.Matrix {
+		padding := strings.Repeat(" ", (maxLen-len(row.TaxonName))+2)
+		tmplMatrix = append(tmplMatrix, templateMatrixRow{
+			PaddedName: row.TaxonName + padding,
+			States:     row.States,
+		})
+	}
+
 	templateData := struct {
 		Title        string
 		Dimensions   Dimensions
 		Format       Format
 		SortedLabels []labelPair
-		Matrix       []MatrixRow
+		Matrix       []templateMatrixRow
 	}{
 		Title:        c.Title,
 		Dimensions:   c.Dimensions,
 		Format:       c.Format,
 		SortedLabels: sortedLabels,
-		Matrix:       c.Matrix,
+		Matrix:       tmplMatrix,
 	}
 
-	// Render the template
 	var buf bytes.Buffer
 	if err := charsTmpl.Execute(&buf, templateData); err != nil {
 		return "[ERROR rendering CHARACTERS block: " + err.Error() + "]\n"
@@ -235,18 +265,16 @@ func parseFormatCommand(tokens []string, format *Format) {
 	}
 }
 
-// parseCharStateLabels extracts the character name, ignoring states after the slash.
 func parseCharStateLabels(tokens []string, labels map[int]string) {
 	var currentID int
 	for _, t := range tokens {
 		if t == "," {
-			continue // Skip commas
+			continue
 		}
 		if id, err := strconv.Atoi(t); err == nil {
 			currentID = id
 		} else if currentID != 0 {
 			if _, exists := labels[currentID]; !exists {
-				// Strip states (e.g., "eye_color/red" -> "eye_color")
 				name := strings.Split(t, "/")[0]
 				labels[currentID] = name
 			}
@@ -254,8 +282,10 @@ func parseCharStateLabels(tokens []string, labels map[int]string) {
 	}
 }
 
-// parseMatrix maps individual character state runes into the CharacterState struct.
+// parseMatrix maps individual character state runes into the CharacterState struct
+// while gracefully tracking polymorphism () and uncertainty {}.
 func parseMatrix(s *Scanner, chars *CharactersBlock) error {
+	nchar := chars.Dimensions.NChar
 	for {
 		taxonToken, err := s.NextToken()
 		if err != nil {
@@ -265,26 +295,67 @@ func parseMatrix(s *Scanner, chars *CharactersBlock) error {
 			break
 		}
 
-		dataToken, err := s.NextToken()
-		if err != nil {
-			return err
-		}
-
 		row := MatrixRow{
 			TaxonName: taxonToken,
-			States:    make([]CharacterState, 0, len(dataToken)),
+			States:    make([]CharacterState, 0, nchar),
 		}
 
-		// Individualize each state value
-		for i, r := range dataToken {
-			index := i + 1 // NEXUS characters are 1-indexed
-			row.States = append(row.States, CharacterState{
-				Index: index,
-				Value: string(r),
-				Label: chars.CharStateLabels[index],
-			})
-		}
+		parsedStates := 0
+		for parsedStates < nchar {
+			tok, err := s.NextToken()
+			if err != nil {
+				return err
+			}
 
+			// Handle Polymorphism and Uncertainty
+			if tok == "(" || tok == "{" {
+				stateType := StatePolymorphic
+				closingTok := ")"
+				if tok == "{" {
+					stateType = StateUncertain
+					closingTok = "}"
+				}
+
+				var values []string
+				for {
+					innerTok, err := s.NextToken()
+					if err != nil {
+						return err
+					}
+					if innerTok == closingTok {
+						break
+					}
+					// Deconstruct smushed tokens inside the brackets (e.g. "AB" -> "A", "B")
+					for _, r := range innerTok {
+						values = append(values, string(r))
+					}
+				}
+
+				index := parsedStates + 1
+				row.States = append(row.States, CharacterState{
+					Index: index,
+					Type:  stateType,
+					Value: values,
+					Label: chars.CharStateLabels[index],
+				})
+				parsedStates++
+			} else {
+				// Handle standard tokens (which might be long strings like "ACATA")
+				for _, r := range tok {
+					if parsedStates >= nchar {
+						break // Protect against malformed files exceeding NCHAR
+					}
+					index := parsedStates + 1
+					row.States = append(row.States, CharacterState{
+						Index: index,
+						Type:  StateSingle,
+						Value: []string{string(r)},
+						Label: chars.CharStateLabels[index],
+					})
+					parsedStates++
+				}
+			}
+		}
 		chars.Matrix = append(chars.Matrix, row)
 	}
 	return nil

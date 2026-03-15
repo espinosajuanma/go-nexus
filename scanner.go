@@ -119,5 +119,5 @@ func (s *Scanner) readWord() (string, error) {
 
 // isPunctuation checks if a rune is a standard NEXUS punctuation mark.
 func isPunctuation(ch rune) bool {
-	return strings.ContainsRune("(){}/\\,;:=*\"+-<>~", ch)
+	return strings.ContainsRune("(){}[]/\\,;:=*\"+-<>~", ch)
 }
