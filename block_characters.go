@@ -70,11 +70,99 @@ func init() {
 
 // CharactersBlock defines characters and includes character data.
 type CharactersBlock struct {
+	nexus           *Nexus
 	Title           string
 	Dimensions      Dimensions
 	Format          Format
 	CharStateLabels map[int]string
 	Matrix          []MatrixRow
+}
+
+// NewCharactersBlock creates, appends, and returns a new CHARACTERS block.
+func (n *Nexus) NewCharactersBlock(dt DataType) *CharactersBlock {
+	cb := &CharactersBlock{
+		nexus: n,
+		Format: Format{
+			DataType: dt,
+			Missing:  "?",
+			Gap:      "-",
+		},
+		CharStateLabels: make(map[int]string),
+	}
+	n.Blocks = append(n.Blocks, cb)
+	return cb
+}
+
+// SetNexus implements the NexusAware interface.
+func (c *CharactersBlock) SetNexus(n *Nexus) {
+	c.nexus = n
+}
+
+// SetTitle applies a title to the block.
+func (c *CharactersBlock) SetTitle(title string) {
+	c.Title = title
+}
+
+// AddCharStateLabel registers a label for a specific character index [cite: 518-523].
+// It automatically expands NCHAR if the index is larger than the current dimension.
+func (c *CharactersBlock) AddCharStateLabel(index int, name string) {
+	c.CharStateLabels[index] = name
+	if index > c.Dimensions.NChar {
+		c.Dimensions.NChar = index
+	}
+}
+
+// AddRow adds a new sequence row to the matrix and auto-registers the taxon [cite: 560-565].
+// States can be passed individually (e.g., "A", "C", "(AG)").
+func (c *CharactersBlock) AddRow(taxonName string, states ...string) {
+	// 1. Auto-sync with the parent TAXA block [cite: 344-345]
+	if c.nexus != nil {
+		c.nexus.RegisterTaxon(taxonName)
+	}
+
+	// 2. Prepare the new matrix row
+	row := MatrixRow{
+		TaxonName: taxonName,
+		States:    make([]CharacterState, 0, len(states)),
+	}
+
+	// 3. Smartly parse the incoming states
+	for i, stateStr := range states {
+		index := i + 1 // NEXUS is 1-indexed
+
+		cs := CharacterState{
+			Index: index,
+			Label: c.CharStateLabels[index],
+		}
+
+		// Clean up the string in case user passed brackets
+		cleanStr := strings.Trim(stateStr, "(){} ")
+
+		// Infer state type [cite: 577, 591-592]
+		if strings.HasPrefix(stateStr, "(") {
+			cs.Type = StatePolymorphic
+			cs.Value = strings.Split(cleanStr, "")
+		} else if strings.HasPrefix(stateStr, "{") {
+			cs.Type = StateUncertain
+			cs.Value = strings.Split(cleanStr, "")
+		} else if len(cleanStr) > 1 {
+			// If they pass "01" without brackets, we assume polymorphism
+			cs.Type = StatePolymorphic
+			cs.Value = strings.Split(cleanStr, "")
+		} else {
+			cs.Type = StateSingle
+			cs.Value = []string{cleanStr}
+		}
+
+		row.States = append(row.States, cs)
+	}
+
+	c.Matrix = append(c.Matrix, row)
+
+	// 4. Ensure NCHAR matches the longest sequence [cite: 380]
+	if len(states) > c.Dimensions.NChar {
+		c.Dimensions.NChar = len(states)
+	}
 }
 
 type Dimensions struct {

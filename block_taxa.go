@@ -32,9 +32,17 @@ var taxaTmpl = template.Must(template.New("taxa").Parse(taxaTmplStr))
 
 // TaxaBlock specifies information about taxa.
 type TaxaBlock struct {
+	nexus      *Nexus
 	Title      string
 	Dimensions NTax
 	TaxLabels  []string
+}
+
+// NewTaxaBlock creates, appends, and returns a new TAXA block.
+func (n *Nexus) NewTaxaBlock() *TaxaBlock {
+	tb := &TaxaBlock{nexus: n}
+	n.Blocks = append(n.Blocks, tb)
+	return tb
 }
 
 type NTax struct {
@@ -104,4 +112,26 @@ func (t *TaxaBlock) Render() string {
 		return "[ERROR rendering TAXA block: " + err.Error() + "]\n"
 	}
 	return buf.String()
+}
+
+// SetNexus implements the NexusAware interface.
+func (t *TaxaBlock) SetNexus(n *Nexus) {
+	t.nexus = n
+}
+
+// SetTitle applies a title to the block.
+func (t *TaxaBlock) SetTitle(title string) {
+	t.Title = title
+}
+
+// AddTaxon appends a taxon to the block if it doesn't already exist .
+// It automatically updates the NTAX dimension count.
+func (t *TaxaBlock) AddTaxon(name string) {
+	for _, label := range t.TaxLabels {
+		if label == name {
+			return // Already exists, no need to add
+		}
+	}
+	t.TaxLabels = append(t.TaxLabels, name)
+	t.Dimensions.Count = len(t.TaxLabels)
 }

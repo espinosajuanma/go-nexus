@@ -34,8 +34,24 @@ func init() {
 
 // TreesBlock stores information about trees.
 type TreesBlock struct {
+	nexus     *Nexus
 	Translate map[string]string
 	Trees     []Tree
+}
+
+// NewTreesBlock creates, appends, and returns a new TREES block.
+func (n *Nexus) NewTreesBlock() *TreesBlock {
+	tb := &TreesBlock{
+		nexus:     n,
+		Translate: make(map[string]string),
+	}
+	n.Blocks = append(n.Blocks, tb)
+	return tb
+}
+
+// SetNexus implements the NexusAware interface.
+func (t *TreesBlock) SetNexus(n *Nexus) {
+	t.nexus = n
 }
 
 // Tree represents a single parsed phylogenetic tree.
@@ -154,6 +170,62 @@ func (t *TreesBlock) Render() string {
 		return "[ERROR rendering TREES block: " + err.Error() + "]\n"
 	}
 	return buf.String()
+}
+
+// AddTranslate maps an arbitrary token (like "1") to a valid taxon name .
+// It automatically syncs with the TAXA block.
+func (t *TreesBlock) AddTranslate(token string, taxonName string) {
+	if t.Translate == nil {
+		t.Translate = make(map[string]string)
+	}
+	t.Translate[token] = taxonName
+
+	// Auto-register the taxon in the TAXA block
+	if t.nexus != nil {
+		t.nexus.RegisterTaxon(taxonName)
+	}
+}
+
+// AddTree appends a fully built Tree to the block.
+func (t *TreesBlock) AddTree(name string, isDefault bool, root *TreeNode) {
+	t.Trees = append(t.Trees, Tree{
+		Name:      name,
+		IsDefault: isDefault,
+		Root:      root,
+	})
+}
+
+// NewNode creates a fresh TreeNode.
+func NewNode() *TreeNode {
+	return &TreeNode{}
+}
+
+// SetName assigns a label to the node (a taxon name or a clade name) [cite: 1089-1090].
+// Returns the node to allow method chaining.
+func (n *TreeNode) SetName(name string) *TreeNode {
+	n.Name = name
+	return n
+}
+
+// SetBranchLength assigns the branch length below this node[cite: 1097].
+// Returns the node to allow method chaining.
+func (n *TreeNode) SetBranchLength(length string) *TreeNode {
+	n.BranchLength = length
+	return n
+}
+
+// AddComment appends a NEXUS comment to the node (e.g., "[&U]" for unrooted) [cite: 1098-1102].
+// Returns the node to allow method chaining.
+func (n *TreeNode) AddComment(comment string) *TreeNode {
+	n.Comments = append(n.Comments, comment)
+	return n
+}
+
+// AddChild attaches a sub-clade or leaf node to this node [cite: 1081-1082].
+// Returns the PARENT node to allow method chaining.
+func (n *TreeNode) AddChild(child *TreeNode) *TreeNode {
+	n.Children = append(n.Children, child)
+	return n
 }
 
 // -----------------------------------------------------------------------------

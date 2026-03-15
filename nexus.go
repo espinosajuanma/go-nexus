@@ -11,10 +11,23 @@ type Nexus struct {
 	Blocks []Block
 }
 
+// New creates a new, empty Nexus file container ready for building.
+func New() *Nexus {
+	return &Nexus{
+		Blocks: make([]Block, 0),
+	}
+}
+
 // Block defines the interface for any NEXUS block
 type Block interface {
 	Parse(s *Scanner) error
 	Render() string
+}
+
+// NexusAware allows a block to hold a reference to its parent container,
+// enabling cross-block synchronization (e.g., auto-updating the TAXA block).
+type NexusAware interface {
+	SetNexus(n *Nexus)
 }
 
 // Parse reads a NEXUS format file from an io.Reader and populates the Nexus struct.
@@ -93,4 +106,14 @@ func GetBlock[T Block](n *Nexus) (T, bool) {
 	}
 	var zero T
 	return zero, false
+}
+
+// RegisterTaxon ensures the taxon exists in the file's TAXA block[cite: 336].
+// If no TAXA block exists, it creates one.
+func (n *Nexus) RegisterTaxon(name string) {
+	taxaBlock, ok := GetBlock[*TaxaBlock](n)
+	if !ok {
+		taxaBlock = n.NewTaxaBlock()
+	}
+	taxaBlock.AddTaxon(name)
 }
