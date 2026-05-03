@@ -1,8 +1,12 @@
-package nexus
+package parser
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/espinosajuanma/nexus/blocks/characters"
+	"github.com/espinosajuanma/nexus/blocks/taxa"
+	"github.com/espinosajuanma/nexus/core"
 )
 
 func TestParseValidFile(t *testing.T) {
@@ -27,7 +31,7 @@ func TestParseValidFile(t *testing.T) {
 	}
 
 	// Verify TAXA block
-	taxa, ok := GetBlock[*TaxaBlock](nex)
+	taxa, ok := core.GetBlock[*taxa.TaxaBlock](nex)
 	if !ok {
 		t.Fatal("Expected to find a TAXA block, but got none")
 	}
@@ -39,7 +43,7 @@ func TestParseValidFile(t *testing.T) {
 	}
 
 	// Verify CHARACTERS block
-	chars, ok := GetBlock[*CharactersBlock](nex)
+	chars, ok := core.GetBlock[*characters.CharactersBlock](nex)
 	if !ok {
 		t.Fatal("Expected to find a CHARACTERS block, but got none")
 	}
