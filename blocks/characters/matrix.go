@@ -12,12 +12,12 @@ func (c *CharactersBlock) AddCharacter(name string, states ...string) *Character
 	// Sanitize state labels
 	sanitizedStates := make([]string, len(states))
 	for i, st := range states {
-		sanitizedStates[i] = core.SanitizeName(st)
+		sanitizedStates[i] = core.DecodeName(st)
 	}
 
 	char := &Character{
 		Index:       len(c.Characters) + 1,
-		Name:        core.SanitizeName(name),
+		Name:        core.DecodeName(name),
 		StateLabels: sanitizedStates,
 	}
 	c.Characters = append(c.Characters, char)
@@ -36,7 +36,7 @@ func (c *CharactersBlock) AddCharacter(name string, states ...string) *Character
 
 // AddTaxon registers a new taxon (row) and returns a reference for adding states.
 func (c *CharactersBlock) AddTaxon(name string) *TaxonReference {
-	sanitizedName := core.SanitizeName(name)
+	sanitizedName := core.DecodeName(name)
 
 	// Sync with global TAXA block
 	if c.nexus != nil {
@@ -77,7 +77,7 @@ func (t *TaxonReference) AddCharacterState(char *Character, value string) *Taxon
 
 	// Helper: Translate a label (e.g., "light red") into its symbol (e.g., "0")
 	resolveSymbol := func(input string) string {
-		sanitizedInput := core.SanitizeName(input)
+		sanitizedInput := core.DecodeName(input)
 		for i, label := range char.StateLabels {
 			if sanitizedInput == label {
 				return strconv.Itoa(i) // Found the label, return its index as the symbol

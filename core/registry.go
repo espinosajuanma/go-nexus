@@ -23,7 +23,7 @@ func RegisterBlock(name string, factory BlockFactory) {
 
 // RegisterTaxon ensures the taxon exists. It decouples the core from the taxa block.
 func (n *Nexus) RegisterTaxon(name string) {
-	sanitizedName := SanitizeName(name)
+	sanitizedName := DecodeName(name)
 
 	// Look for an existing block that implements the TaxaRegistry interface
 	for _, b := range n.Blocks {

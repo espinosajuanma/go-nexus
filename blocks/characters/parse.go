@@ -1,10 +1,10 @@
 package characters
 
 import (
-	"bytes"
 	"strconv"
 	"strings"
 
+	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/parser"
 	"github.com/espinosajuanma/nexus/scanner"
 )
@@ -81,87 +81,6 @@ func (c *CharactersBlock) Parse(s *scanner.Scanner) error {
 	}
 }
 
-// Render implements the Block interface for CharactersBlock.
-func (c *CharactersBlock) Render() string {
-	// Prepare and sort Character Labels for the CHARSTATELABELS command
-	type labelView struct {
-		ID     int
-		Name   string
-		States string
-	}
-	var sortedLabels []labelView
-
-	for _, char := range c.Characters {
-		// Only render if the character has a name OR state labels
-		if char.Name != "" || len(char.StateLabels) > 0 {
-			statesStr := ""
-			if len(char.StateLabels) > 0 {
-				var safeStates []string
-				for _, st := range char.StateLabels {
-					if st == "" {
-						safeStates = append(safeStates, "_") // Use underscore for unnamed states
-					} else {
-						safeStates = append(safeStates, st)
-					}
-				}
-				statesStr = strings.Join(safeStates, " ")
-			}
-
-			sortedLabels = append(sortedLabels, labelView{
-				ID:     char.Index,
-				Name:   char.Name,
-				States: statesStr,
-			})
-		}
-	}
-
-	// Calculate the longest taxon name for matrix alignment
-	maxTaxonLen := 0
-	for _, taxon := range c.Taxa {
-		if len(taxon.Name) > maxTaxonLen {
-			maxTaxonLen = len(taxon.Name)
-		}
-	}
-
-	// Flatten the 2D data into a View Model for the template
-	type templateRow struct {
-		PaddedName string
-		States     []CharacterState
-	}
-	var rows []templateRow
-
-	for i, taxon := range c.Taxa {
-		// Calculate dynamic padding
-		padding := strings.Repeat(" ", (maxTaxonLen-len(taxon.Name))+2)
-
-		rows = append(rows, templateRow{
-			PaddedName: taxon.Name + padding,
-			States:     c.data[i],
-		})
-	}
-
-	// Populate the final structure for the Go Template engine
-	templateData := struct {
-		Title        string
-		Dimensions   Dimensions
-		Format       Format
-		SortedLabels []labelView
-		Matrix       []templateRow
-	}{
-		Title:        c.Title,
-		Dimensions:   c.Dimensions,
-		Format:       c.Format,
-		SortedLabels: sortedLabels,
-		Matrix:       rows,
-	}
-
-	var buf bytes.Buffer
-	if err := charsTmpl.Execute(&buf, templateData); err != nil {
-		return "[ERROR rendering CHARACTERS block: " + err.Error() + "]\n"
-	}
-	return buf.String()
-}
-
 // -----------------------------------------------------------------------------
 // Parsing Helpers
 // -----------------------------------------------------------------------------
@@ -196,9 +115,9 @@ func parseCharStateLabelsRelational(tokens []string, c *CharactersBlock) {
 			char := c.Characters[currentID-1]
 
 			if !readingStates {
-				char.Name = t
+				char.Name = core.DecodeName(t)
 			} else {
-				stateName := t
+				stateName := core.DecodeName(t)
 				if stateName == "_" {
 					stateName = "" // Translate NEXUS underscores back into empty strings internally
 				}
@@ -221,7 +140,7 @@ func parseMatrixRelational(s *scanner.Scanner, c *CharactersBlock) error {
 		}
 
 		// Register taxon and get a reference to populate states
-		taxonRef := c.AddTaxon(taxonToken)
+		taxonRef := c.AddTaxon(core.DecodeName(taxonToken))
 
 		parsedStates := 0
 		for parsedStates < nchar {

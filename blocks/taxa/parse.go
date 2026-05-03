@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/parser"
 	"github.com/espinosajuanma/nexus/scanner"
 )
@@ -53,7 +54,9 @@ func (t *TaxaBlock) Parse(s *scanner.Scanner) error {
 			if err != nil {
 				return err
 			}
-			t.TaxLabels = labels
+			for _, l := range labels {
+				t.TaxLabels = append(t.TaxLabels, core.DecodeName(l))
+			}
 		default:
 			if _, err := parser.ReadUntilSemicolon(s); err != nil {
 				return err

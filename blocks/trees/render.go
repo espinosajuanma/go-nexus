@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	"github.com/espinosajuanma/nexus/core"
 )
 
 // The template for the TREES block
@@ -42,7 +44,7 @@ func (t *TreesBlock) Render() string {
 	for i, tok := range tokens {
 		sortedTranslate = append(sortedTranslate, translatePair{
 			Token:  tok,
-			Taxon:  t.Translate[tok],
+			Taxon:  core.EncodeName(t.Translate[tok]),
 			IsLast: i == len(tokens)-1,
 		})
 	}
