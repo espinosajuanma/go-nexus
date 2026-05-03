@@ -11,7 +11,7 @@ BEGIN CHARACTERS;
 	DIMENSIONS NCHAR=20;
 	FORMAT DATATYPE=STANDARD;
   CHARSTATELABELS
-    1 'roars with might.',
+    1 roars with might.,
     2 'scurries in fright.',
     3 'naps, purring light.',
     4 'chases, day and night.',

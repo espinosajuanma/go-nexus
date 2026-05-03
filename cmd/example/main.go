@@ -3,35 +3,35 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 
 	"github.com/espinosajuanma/nexus"
 )
 
 func main() {
-	fileName := "test.nex"
+	fileName := "./test.nex"
 	fmt.Printf("=== 1. Parsing NEXUS Data from %s ===\n", fileName)
-	nex, err := parseNexus(fileName)
+	existingNexus, err := parseNexus(fileName)
 	if err != nil {
 		log.Fatalf("Failed to parse NEXUS file: %v", err)
 	}
 	fmt.Println("\n=== 2. Exporting NEXUS Data ===")
-	err = nex.Export(os.Stdout)
+	err = existingNexus.Export(os.Stdout)
 	if err != nil {
 		log.Fatalf("Failed to export NEXUS file: %v", err)
 	}
 
 	fmt.Println("\n=== 3. Creating NEXUS Structure ===")
-	nex, err = newNexus()
+	newNexus, err := newNexus()
 	if err != nil {
 		log.Fatalf("Failed to create NEXUS file: %v", err)
 	}
 	fmt.Println("\n=== 4. Exporting NEXUS Structure ===")
-	err = nex.Export(os.Stdout)
+	err = newNexus.Export(os.Stdout)
 	if err != nil {
 		log.Fatalf("Failed to export NEXUS file: %v", err)
 	}
-
 }
 
 func parseNexus(fileName string) (*nexus.Nexus, error) {
@@ -49,6 +49,8 @@ func parseNexus(fileName string) (*nexus.Nexus, error) {
 	fmt.Println("Successfully parsed the NEXUS file into Go structs!")
 
 	if taxa, ok := nexus.GetBlock[*nexus.TaxaBlock](nex); ok {
+		taxa.AddTaxon("Sarasa_1")
+
 		fmt.Println("-- Found a TAXA Block --")
 		fmt.Printf("Taxa Count: %d\n", taxa.Dimensions.Count)
 		fmt.Printf("Taxa Labels: %v\n", taxa.TaxLabels)
@@ -84,17 +86,24 @@ func newNexus() (*nexus.Nexus, error) {
 	chars := nex.NewCharactersBlock(nexus.Standard)
 	chars.SetTitle("Morphology_Matrix")
 
-	// Set labels dynamically from your DB logic
-	chars.AddCharStateLabel(1, "eye_color")
-	chars.AddCharStateLabel(2, "tail_length")
-	chars.AddCharStateLabel(3, "habitat")
+	// Add taxa to the block
+	chars.AddTaxon("fish fish")
+	chars.AddTaxon("frog")
+	chars.AddTaxon("snake")
+	chars.AddTaxon("mouse")
 
-	// Add data directly. Notice how we pass polymorphic states like "(01)"!
-	// This automatically registers the taxa in the TAXA block!
-	chars.AddRow("fish", "0", "1", "0")
-	chars.AddRow("frog", "0", "1", "(01)")
-	chars.AddRow("snake", "1", "0", "1")
-	chars.AddRow("mouse", "1", "0", "1")
+	// Add characters to the block
+	eyeColor := chars.AddCharacter("eye color", "light red", "blue", "green")
+	tailLength := chars.AddCharacter("tail length", "short", "long")
+	unnamedChar := chars.AddCharacter("", "absent", "present")
+
+	characters := []*nexus.Character{eyeColor, tailLength, unnamedChar}
+	for _, char := range characters {
+		for _, taxon := range chars.Taxa {
+			randState := char.StateLabels[rand.Intn(len(char.StateLabels))]
+			taxon.AddCharacterState(char, randState)
+		}
+	}
 
 	// Create the TREES block
 	trees := nex.NewTreesBlock()

@@ -108,7 +108,7 @@ func GetBlock[T Block](n *Nexus) (T, bool) {
 	return zero, false
 }
 
-// RegisterTaxon ensures the taxon exists in the file's TAXA block[cite: 336].
+// RegisterTaxon ensures the taxon exists in the file's TAXA block
 // If no TAXA block exists, it creates one.
 func (n *Nexus) RegisterTaxon(name string) {
 	taxaBlock, ok := GetBlock[*TaxaBlock](n)
@@ -116,4 +116,9 @@ func (n *Nexus) RegisterTaxon(name string) {
 		taxaBlock = n.NewTaxaBlock()
 	}
 	taxaBlock.AddTaxon(name)
+}
+
+// SanitizeName replaces spaces with underscores to conform to NEXUS word rules.
+func SanitizeName(name string) string {
+	return strings.ReplaceAll(strings.TrimSpace(name), " ", "_")
 }
