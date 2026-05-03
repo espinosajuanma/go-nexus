@@ -10,80 +10,10 @@ import (
 	"github.com/espinosajuanma/nexus/blocks/characters"
 	"github.com/espinosajuanma/nexus/blocks/taxa"
 	"github.com/espinosajuanma/nexus/blocks/trees"
-	"github.com/espinosajuanma/nexus/core"
 )
 
 func main() {
-	fileName := "./test.nex"
-
-	fmt.Printf("=== 1. Parsing NEXUS Data from %s ===\n", fileName)
-	existingNexus, err := parseNexus(fileName)
-	if err != nil {
-		log.Fatalf("Failed to parse NEXUS file: %v", err)
-	}
-
-	fmt.Println("\n=== 2. Exporting NEXUS Data ===")
-	err = existingNexus.Export(os.Stdout)
-	if err != nil {
-		log.Fatalf("Failed to export NEXUS file: %v", err)
-	}
-
-	fmt.Println("\n=== 3. Creating NEXUS Structure ===")
-	newNexus, err := newNexus()
-	if err != nil {
-		log.Fatalf("Failed to create NEXUS file: %v", err)
-	}
-
-	fmt.Println("\n=== 4. Exporting NEXUS Structure ===")
-	err = newNexus.Export(os.Stdout)
-	if err != nil {
-		log.Fatalf("Failed to export NEXUS file: %v", err)
-	}
-}
-
-func parseNexus(fileName string) (*nexus.Nexus, error) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
-	// Parse the file using our custom package
-	nex, err := nexus.Parse(file)
-	if err != nil {
-		log.Fatalf("Failed to parse NEXUS file: %v", err)
-	}
-
-	fmt.Println("Successfully parsed the NEXUS file into Go structs!")
-
-	if t, ok := core.GetBlock[*taxa.TaxaBlock](nex); ok {
-		t.AddTaxon("Sarasa_1")
-		fmt.Println("-- Found a TAXA Block --")
-		fmt.Printf("Taxa Count: %d\n", t.Dimensions.Count)
-		fmt.Printf("Taxa Labels: %v\n", t.TaxLabels)
-	} else {
-		fmt.Println("-- No TAXA Block found --")
-	}
-
-	if c, ok := core.GetBlock[*characters.CharactersBlock](nex); ok {
-		fmt.Println("-- Found a CHARACTERS Block --")
-		fmt.Printf("Characters Count: %d\n", c.Dimensions.NChar)
-		fmt.Printf("Data Type: %s\n", c.Format.DataType)
-	} else {
-		fmt.Println("-- No CHARACTERS Block found --")
-	}
-
-	if tr, ok := core.GetBlock[*trees.TreesBlock](nex); ok {
-		fmt.Println("-- Found a TREES Block --")
-		fmt.Printf("Trees Count: %d\n", len(tr.Trees))
-	} else {
-		fmt.Println("-- No TREES Block found --")
-	}
-
-	return nex, nil
-}
-
-func newNexus() (*nexus.Nexus, error) {
+	fmt.Println("\n=== Creating NEXUS Structure ===")
 	nex := nexus.New()
 
 	// Create a TAXA block to set a specific title.
@@ -136,5 +66,9 @@ func newNexus() (*nexus.Nexus, error) {
 	// Attach the parsed root node to the block
 	tr.AddTree("my_database_tree", true, rootNode)
 
-	return nex, nil
+	fmt.Println("\n=== Exporting NEXUS Structure ===")
+	err := nex.Export(os.Stdout)
+	if err != nil {
+		log.Fatalf("Failed to export NEXUS file: %v", err)
+	}
 }

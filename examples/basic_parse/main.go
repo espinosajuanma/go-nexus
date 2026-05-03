@@ -1,0 +1,61 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
+	"github.com/espinosajuanma/nexus"
+	"github.com/espinosajuanma/nexus/blocks/characters"
+	"github.com/espinosajuanma/nexus/blocks/taxa"
+	"github.com/espinosajuanma/nexus/blocks/trees"
+	"github.com/espinosajuanma/nexus/core"
+)
+
+func main() {
+	fileName := filepath.Join("examples", "basic_parse", "test.nex")
+
+	fmt.Printf("=== Reading file: %v", fileName)
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Failed to open NEXUS file: %v", err)
+	}
+	defer file.Close()
+
+	fmt.Printf("=== Parsing NEXUS Data from %s ===\n", fileName)
+	nex, err := nexus.Parse(file)
+	if err != nil {
+		log.Fatalf("Failed to parse NEXUS file: %v", err)
+	}
+
+	if taxa, ok := core.GetBlock[*taxa.TaxaBlock](nex); ok {
+		fmt.Println("-- Found a TAXA Block --")
+		fmt.Printf("Taxa Count: %d\n", taxa.Dimensions.Count)
+		fmt.Printf("Taxa Labels: %v\n", taxa.TaxLabels)
+	} else {
+		fmt.Println("-- No TAXA Block found --")
+	}
+
+	if char, ok := core.GetBlock[*characters.CharactersBlock](nex); ok {
+		char.AddTaxon("Sarasa 1")
+		fmt.Println("-- Found a CHARACTERS Block --")
+		fmt.Printf("Characters Count: %d\n", char.Dimensions.NChar)
+		fmt.Printf("Data Type: %s\n", char.Format.DataType)
+	} else {
+		fmt.Println("-- No CHARACTERS Block found --")
+	}
+
+	if trees, ok := core.GetBlock[*trees.TreesBlock](nex); ok {
+		fmt.Println("-- Found a TREES Block --")
+		fmt.Printf("Trees Count: %d\n", len(trees.Trees))
+	} else {
+		fmt.Println("-- No TREES Block found --")
+	}
+
+	fmt.Println("\n=== Exporting NEXUS Data ===")
+	err = nex.Export(os.Stdout)
+	if err != nil {
+		log.Fatalf("Failed to export NEXUS file: %v", err)
+	}
+}
