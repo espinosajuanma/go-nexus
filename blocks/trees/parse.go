@@ -3,7 +3,7 @@ package trees
 import (
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/parser"
 	"github.com/espinosajuanma/nexus/scanner"
 )
 
@@ -17,12 +17,12 @@ func (t *TreesBlock) Parse(s *scanner.Scanner) error {
 
 		cmd := strings.ToUpper(token)
 		if cmd == "END" || cmd == "ENDBLOCK" {
-			return core.ExpectSemicolon(s)
+			return parser.ExpectSemicolon(s)
 		}
 
 		switch cmd {
 		case "TRANSLATE":
-			tokens, err := core.ReadUntilSemicolon(s)
+			tokens, err := parser.ReadUntilSemicolon(s)
 			if err != nil {
 				return err
 			}
@@ -32,7 +32,7 @@ func (t *TreesBlock) Parse(s *scanner.Scanner) error {
 				return err
 			}
 		default:
-			if _, err := core.ReadUntilSemicolon(s); err != nil {
+			if _, err := parser.ReadUntilSemicolon(s); err != nil {
 				return err
 			}
 		}
@@ -78,7 +78,7 @@ func (t *TreesBlock) parseTree(s *scanner.Scanner) error {
 	}
 
 	// Read the Newick tokens until ';'
-	specTokens, err := core.ReadUntilSemicolon(s)
+	specTokens, err := parser.ReadUntilSemicolon(s)
 	if err != nil {
 		return err
 	}

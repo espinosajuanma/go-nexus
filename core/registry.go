@@ -1,6 +1,8 @@
 package core
 
-import "strings"
+import (
+	"strings"
+)
 
 // TaxaRegistry defines the interface for blocks that can register taxa.
 type TaxaRegistry interface {

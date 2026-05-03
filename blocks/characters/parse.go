@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/parser"
 	"github.com/espinosajuanma/nexus/scanner"
 )
 
@@ -19,12 +19,12 @@ func (c *CharactersBlock) Parse(s *scanner.Scanner) error {
 
 		cmd := strings.ToUpper(token)
 		if cmd == "END" || cmd == "ENDBLOCK" {
-			return core.ExpectSemicolon(s)
+			return parser.ExpectSemicolon(s)
 		}
 
 		switch cmd {
 		case "TITLE":
-			tokens, err := core.ReadUntilSemicolon(s)
+			tokens, err := parser.ReadUntilSemicolon(s)
 			if err != nil {
 				return err
 			}
@@ -32,7 +32,7 @@ func (c *CharactersBlock) Parse(s *scanner.Scanner) error {
 
 		case "DIMENSIONS":
 			// Extract NCHAR to initialize our Character objects
-			tokens, err := core.ReadUntilSemicolon(s)
+			tokens, err := parser.ReadUntilSemicolon(s)
 			if err != nil {
 				return err
 			}
@@ -54,14 +54,14 @@ func (c *CharactersBlock) Parse(s *scanner.Scanner) error {
 			}
 
 		case "FORMAT":
-			tokens, err := core.ReadUntilSemicolon(s)
+			tokens, err := parser.ReadUntilSemicolon(s)
 			if err != nil {
 				return err
 			}
 			parseFormatCommand(tokens, &c.Format)
 
 		case "CHARSTATELABELS":
-			tokens, err := core.ReadUntilSemicolon(s)
+			tokens, err := parser.ReadUntilSemicolon(s)
 			if err != nil {
 				return err
 			}
@@ -74,7 +74,7 @@ func (c *CharactersBlock) Parse(s *scanner.Scanner) error {
 
 		default:
 			// Skip unrecognized commands
-			if _, err := core.ReadUntilSemicolon(s); err != nil {
+			if _, err := parser.ReadUntilSemicolon(s); err != nil {
 				return err
 			}
 		}

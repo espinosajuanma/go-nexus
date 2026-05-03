@@ -5,15 +5,15 @@ import (
 	"io"
 	"strings"
 
-	. "github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/scanner"
 )
 
 // Parse reads a NEXUS format file from an io.Reader and populates the Nexus struct.
-func Parse(r io.Reader) (*Nexus, error) {
+func Parse(r io.Reader) (*core.Nexus, error) {
 	scanner := scanner.NewScanner(r)
-	nex := &Nexus{
-		Blocks: make([]Block, 0),
+	nex := &core.Nexus{
+		Blocks: make([]core.Block, 0),
 	}
 
 	token, err := scanner.NextToken()
@@ -43,7 +43,7 @@ func Parse(r io.Reader) (*Nexus, error) {
 				return nil, err
 			}
 
-			factory, exists := BlockRegistry[strings.ToUpper(blockName)]
+			factory, exists := core.BlockRegistry[strings.ToUpper(blockName)]
 			if exists {
 				// Create a new instance of the block
 				block := factory()
