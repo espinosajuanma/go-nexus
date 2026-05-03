@@ -1,33 +1,19 @@
 package trees
 
 import (
-	"bytes"
+	_ "embed"
 	"sort"
 	"strings"
-	"text/template"
 
 	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/templater"
 )
 
-// The template for the TREES block
-const treesTmplStr = `BEGIN TREES;
-{{- if .SortedTranslate}}
-	TRANSLATE
-{{- range $index, $element := .SortedTranslate}}
-		{{$element.Token}} {{$element.Taxon}}{{if not $element.IsLast}},{{end}}
-{{- end}}
-	;
-{{- end}}
-{{- range .Trees}}
-	TREE {{if .IsDefault}}* {{end}}{{.Name}} = {{.Root.Render}};
-{{- end}}
-END;
-`
-
-var treesTmpl = template.Must(template.New("trees").Parse(treesTmplStr))
+//go:embed trees.tmpl
+var treesTmpl string
 
 // Render implements the Block interface for TreesBlock.
-func (t *TreesBlock) Render() string {
+func (t *TreesBlock) Render() (string, error) {
 	type translatePair struct {
 		Token  string
 		Taxon  string
@@ -57,11 +43,13 @@ func (t *TreesBlock) Render() string {
 		Trees:           t.Trees,
 	}
 
-	var buf bytes.Buffer
-	if err := treesTmpl.Execute(&buf, templateData); err != nil {
-		return "[ERROR rendering TREES block: " + err.Error() + "]\n"
+	tmpl, err := templater.New("trees", treesTmpl)
+	if err != nil {
+		return "", err
 	}
-	return buf.String()
+	rendered, err := tmpl.Render(templateData)
+
+	return rendered, err
 }
 
 // Render recursively rebuilds the Newick string from the node structure.

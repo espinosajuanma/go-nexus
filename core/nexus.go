@@ -28,14 +28,18 @@ type NexusAware interface {
 // Block defines the interface for any NEXUS block
 type Block interface {
 	Parse(s *scanner.Scanner) error
-	Render() string
+	Render() (string, error)
 }
 
 // Export serializes the Nexus structure to the provided io.Writer.
 func (n *Nexus) Export(w io.Writer) error {
 	fmt.Fprintf(w, "#NEXUS\n\n")
 	for _, block := range n.Blocks {
-		fmt.Fprintf(w, "%s\n", block.Render())
+		rendered, err := block.Render()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(w, "%s\n", rendered)
 	}
 	return nil
 }

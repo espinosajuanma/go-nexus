@@ -1,41 +1,18 @@
 package characters
 
 import (
-	"bytes"
+	_ "embed"
 	"strings"
-	"text/template"
 
 	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/templater"
 )
 
-// The template for the CHARACTERS block
-const charsTmplStr = `BEGIN CHARACTERS;
-{{- if .Title}}
-	TITLE {{.Title}};
-{{- end}}
-	DIMENSIONS NCHAR={{.Dimensions.NChar}};
-{{- if or .Format.DataType .Format.Missing .Format.Gap .Format.Symbols}}
-	FORMAT{{if .Format.DataType}} DATATYPE={{.Format.DataType}}{{end}}{{if .Format.Missing}} MISSING={{.Format.Missing}}{{end}}{{if .Format.Gap}} GAP={{.Format.Gap}}{{end}}{{if .Format.Symbols}} SYMBOLS="{{.Format.Symbols}}"{{end}};
-{{- end}}
-{{- if .SortedLabels}}
-	CHARSTATELABELS
-{{- range .SortedLabels}}
-		{{.ID}} {{if .Name}}{{.Name}}{{end}}{{if .States}} / {{.States}}{{end}},
-{{- end}}
-	;
-{{- end}}
-	MATRIX
-{{- range .Matrix}}
-	{{.PaddedName}}{{range .States}}{{.Render}}{{end}}
-{{- end}}
-	;
-END;
-`
-
-var charsTmpl = template.Must(template.New("characters").Parse(charsTmplStr))
+//go:embed characters.tmpl
+var charsTmplStr string
 
 // Render implements the Block interface for CharactersBlock.
-func (c *CharactersBlock) Render() string {
+func (c *CharactersBlock) Render() (string, error) {
 	// Prepare and sort Character Labels for the CHARSTATELABELS command
 	type labelView struct {
 		ID     int
@@ -109,11 +86,13 @@ func (c *CharactersBlock) Render() string {
 		Matrix:       rows,
 	}
 
-	var buf bytes.Buffer
-	if err := charsTmpl.Execute(&buf, templateData); err != nil {
-		return "[ERROR rendering CHARACTERS block: " + err.Error() + "]\n"
+	tmpl, err := templater.New("characters", charsTmplStr)
+	if err != nil {
+		return "", err
 	}
-	return buf.String()
+	rendered, err := tmpl.Render(templateData)
+
+	return rendered, err
 }
 
 // Render formats the CharacterState back into its proper NEXUS representation.

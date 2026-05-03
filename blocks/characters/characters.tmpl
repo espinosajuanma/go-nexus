@@ -1,0 +1,21 @@
+BEGIN CHARACTERS;
+{{- if .Title}}
+	TITLE {{.Title}};
+{{- end}}
+	DIMENSIONS NCHAR={{.Dimensions.NChar}};
+{{- if or .Format.DataType .Format.Missing .Format.Gap .Format.Symbols}}
+	FORMAT{{if .Format.DataType}} DATATYPE={{.Format.DataType}}{{end}}{{if .Format.Missing}} MISSING={{.Format.Missing}}{{end}}{{if .Format.Gap}} GAP={{.Format.Gap}}{{end}}{{if .Format.Symbols}} SYMBOLS="{{.Format.Symbols}}"{{end}};
+{{- end}}
+{{- if .SortedLabels}}
+	CHARSTATELABELS
+{{- range .SortedLabels}}
+		{{.ID}} {{if .Name}}{{.Name}}{{end}}{{if .States}} / {{.States}}{{end}},
+{{- end}}
+	;
+{{- end}}
+	MATRIX
+{{- range .Matrix}}
+	{{.PaddedName}}{{range .States}}{{.Render}}{{end}}
+{{- end}}
+	;
+END;

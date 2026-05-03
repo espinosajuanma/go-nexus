@@ -1,30 +1,17 @@
 package taxa
 
 import (
-	"bytes"
-	"text/template"
+	_ "embed"
 
 	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/templater"
 )
 
-// The template for the TAXA block
-const taxaTmplStr = `BEGIN TAXA;
-{{- if .Title}}
-	TITLE {{.Title}};
-{{- end}}
-	DIMENSIONS NTAX={{.Dimensions.Count}};
-	TAXLABELS
-{{- range .TaxLabels}}
-		{{.}}
-{{- end}}
-	;
-END;
-`
-
-var taxaTmpl = template.Must(template.New("taxa").Parse(taxaTmplStr))
+//go:embed taxa.tmpl
+var taxaTmplStr string
 
 // Render implements the Block interface for TaxaBlock.
-func (t *TaxaBlock) Render() string {
+func (t *TaxaBlock) Render() (string, error) {
 	encodedLabels := make([]string, len(t.TaxLabels))
 	for i, label := range t.TaxLabels {
 		encodedLabels[i] = core.EncodeName(label)
@@ -40,10 +27,9 @@ func (t *TaxaBlock) Render() string {
 		TaxLabels:  encodedLabels,
 	}
 
-	var buf bytes.Buffer
-	if err := taxaTmpl.Execute(&buf, templateData); err != nil {
-		// If template execution fails, return a NEXUS comment with the error
-		return "[ERROR rendering TAXA block: " + err.Error() + "]\n"
+	tmpl, err := templater.New("taxa", taxaTmplStr)
+	if err != nil {
+		return "", err
 	}
-	return buf.String()
+	return tmpl.Render(templateData)
 }

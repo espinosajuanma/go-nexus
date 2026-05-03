@@ -66,7 +66,6 @@ func (c *CharactersBlock) AddTaxon(name string) *TaxonReference {
 }
 
 // AddCharacterState allows setting a value at a specific character for this taxon.
-// AddCharacterState allows setting a value at a specific character for this taxon.
 func (t *TaxonReference) AddCharacterState(char *Character, value string) *TaxonReference {
 	if char.Index <= 0 || char.Index > len(t.parent.Characters) {
 		return t

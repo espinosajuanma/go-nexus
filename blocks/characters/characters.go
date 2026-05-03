@@ -12,7 +12,6 @@ func init() {
 				Missing: "?",
 				Gap:     "-",
 			},
-			CharStateLabels: make(map[int]string),
 		}
 	})
 }

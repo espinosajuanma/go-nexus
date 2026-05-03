@@ -1,0 +1,11 @@
+BEGIN TAXA;
+{{- if .Title}}
+	TITLE {{.Title}};
+{{- end}}
+	DIMENSIONS NTAX={{.Dimensions.Count}};
+	TAXLABELS
+{{- range .TaxLabels}}
+		{{.}}
+{{- end}}
+	;
+END;

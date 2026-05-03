@@ -1,0 +1,12 @@
+BEGIN TREES;
+{{- if .SortedTranslate}}
+	TRANSLATE
+{{- range $index, $element := .SortedTranslate}}
+		{{$element.Token}} {{$element.Taxon}}{{if not $element.IsLast}},{{end}}
+{{- end}}
+	;
+{{- end}}
+{{- range .Trees}}
+	TREE {{if .IsDefault}}* {{end}}{{.Name}} = {{.Root.Render}};
+{{- end}}
+END;
