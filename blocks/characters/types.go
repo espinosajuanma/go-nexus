@@ -23,16 +23,20 @@ const (
 
 // Format specifies the format of the data MATRIX.
 type Format struct {
-	DataType    DataType
-	Missing     string
-	Gap         string
-	Symbols     string
-	Equate      map[string]string
-	MatchChar   string
-	RespectCase bool
-	Interleave  bool
-	Tokens      bool
-	Labels      bool
+	DataType     DataType
+	Missing      string
+	Gap          string
+	Symbols      string
+	Equate       map[string]string
+	MatchChar    string
+	RespectCase  bool
+	Interleave   bool
+	Tokens       bool
+	Labels       bool
+	Transpose    bool
+	Items        string
+	StatesFormat string
+	NStates      int
 }
 
 // Character represents a single column in the NEXUS matrix.

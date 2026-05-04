@@ -1,9 +1,11 @@
-package scanner
+package scanner_test
 
 import (
 	"io"
 	"strings"
 	"testing"
+
+	. "github.com/espinosajuanma/nexus/scanner"
 )
 
 func TestScanner(t *testing.T) {

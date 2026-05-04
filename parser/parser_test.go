@@ -36,8 +36,8 @@ END;`
 	if !ok {
 		t.Fatal("Expected to find a TAXA block, but got none")
 	}
-	if taxa.Dimensions.Count != 2 {
-		t.Errorf("Expected 2 taxa, got %d", taxa.Dimensions.Count)
+	if taxa.Dimensions != 2 {
+		t.Errorf("Expected 2 taxa, got %d", taxa.Dimensions)
 	}
 	if len(taxa.TaxLabels) != 2 || taxa.TaxLabels[0] != "fish" {
 		t.Errorf("Unexpected taxa labels: %v", taxa.TaxLabels)
@@ -48,8 +48,8 @@ END;`
 	if !ok {
 		t.Fatal("Expected to find a CHARACTERS block, but got none")
 	}
-	if chars.Dimensions.NChar != 10 {
-		t.Errorf("Expected 10 characters, got %d", chars.Dimensions.NChar)
+	if chars.Dimensions != 10 {
+		t.Errorf("Expected 10 characters, got %d", chars.Dimensions)
 	}
 	if chars.Format.DataType != "DNA" {
 		t.Errorf("Expected DATATYPE=DNA, got %s", chars.Format.DataType)
@@ -130,8 +130,8 @@ END;`
 	if !ok {
 		t.Fatal("Expected to find a TAXA block after skipping unknown block")
 	}
-	if taxa.Dimensions.Count != 1 {
-		t.Errorf("Expected 1 taxon, got %d", taxa.Dimensions.Count)
+	if taxa.Dimensions != 1 {
+		t.Errorf("Expected 1 taxon, got %d", taxa.Dimensions)
 	}
 }
 

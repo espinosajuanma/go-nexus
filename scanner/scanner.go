@@ -11,7 +11,9 @@ import (
 
 // Scanner wraps a bufio.Reader to tokenize a NEXUS file.
 type Scanner struct {
-	reader *bufio.Reader
+	reader      *bufio.Reader
+	peekedToken *string
+	peekedErr   error
 }
 
 // NewScanner creates a new NEXUS scanner.
@@ -19,9 +21,58 @@ func NewScanner(r io.Reader) *Scanner {
 	return &Scanner{reader: bufio.NewReader(r)}
 }
 
+// PeekToken looks at the next token without advancing the scanner's position.
+func (s *Scanner) PeekToken() (string, error) {
+	if s.peekedToken != nil {
+		return *s.peekedToken, s.peekedErr
+	}
+
+	tok, err := s.readNextToken()
+	s.peekedToken = &tok
+	s.peekedErr = err
+	return tok, err
+}
+
 // NextToken returns the next NEXUS token. It skips whitespace and comments.
 // Returns an empty string and io.EOF when the end of the file is reached.
 func (s *Scanner) NextToken() (string, error) {
+	for {
+		ch, _, err := s.reader.ReadRune()
+		if err != nil {
+			return "", err
+		}
+
+		// Skip whitespace
+		if unicode.IsSpace(ch) {
+			continue
+		}
+
+		// Handle comments (which can be nested)
+		if ch == '[' {
+			if err := s.skipComment(); err != nil {
+				return "", err
+			}
+			continue
+		}
+
+		// Handle quoted words
+		if ch == '\'' {
+			return s.readQuotedWord()
+		}
+
+		// Handle punctuation as single-character tokens
+		if isPunctuation(ch) {
+			return string(ch), nil
+		}
+
+		// Read unquoted word
+		s.reader.UnreadRune()
+		return s.readWord()
+	}
+}
+
+// readNextToken contains the core tokenization logic.
+func (s *Scanner) readNextToken() (string, error) {
 	for {
 		ch, _, err := s.reader.ReadRune()
 		if err != nil {

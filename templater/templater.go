@@ -14,7 +14,7 @@ type Template struct {
 }
 
 // New creates a new Template instance by parsing the provided layout string.
-func New(name, layout string) (*Template, error) {
+func New(name, tmplStr string, funcMaps ...template.FuncMap) (*Template, error) {
 	fns := template.FuncMap{
 		"snake":    snake,
 		"quote":    quote,
@@ -25,7 +25,14 @@ func New(name, layout string) (*Template, error) {
 		"sortMap":  sortMap,
 	}
 
-	t, err := template.New(name).Funcs(fns).Parse(layout)
+	// Merge all provided function maps into one
+	for _, fm := range funcMaps {
+		for k, v := range fm {
+			fns[k] = v
+		}
+	}
+
+	t, err := template.New(name).Funcs(fns).Parse(tmplStr)
 	if err != nil {
 		return nil, err
 	}

@@ -7,43 +7,31 @@ import (
 	"github.com/espinosajuanma/nexus/core"
 )
 
-// AddCharacter registers a new character (column) to the block.
+// AddCharacter registers a new character and initializes it with the InternalMissing sentinel.
 func (c *CharactersBlock) AddCharacter(name string, states ...string) *Character {
-	// Sanitize state labels
-	sanitizedStates := make([]string, len(states))
-	for i, st := range states {
-		sanitizedStates[i] = core.DecodeName(st)
-	}
-
 	char := &Character{
 		Index:       len(c.Characters) + 1,
 		Name:        core.DecodeName(name),
-		StateLabels: sanitizedStates,
+		StateLabels: states,
 	}
 	c.Characters = append(c.Characters, char)
 	c.Dimensions = len(c.Characters)
 
-	// Expand every existing taxon row to include a "Missing" state for this new character
+	// Fill existing rows with the Missing sentinel
 	for i := range c.data {
 		c.data[i] = append(c.data[i], CharacterState{
 			Index: char.Index,
 			Type:  StateSingle,
-			Value: []string{c.Format.Missing},
+			Value: []string{InternalMissing}, // Decoupled sentinel
 		})
 	}
 	return char
 }
 
-// AddTaxon registers a new taxon (row) and returns a reference for adding states.
+// AddTaxon registers a new taxon and prepares its matrix row.
 func (c *CharactersBlock) AddTaxon(name string) *TaxonReference {
 	sanitizedName := core.DecodeName(name)
 
-	// Sync with global TAXA block
-	if c.nexus != nil {
-		c.nexus.RegisterTaxon(sanitizedName)
-	}
-
-	// Create the Taxon Reference
 	taxon := &TaxonReference{
 		Index:  len(c.Taxa),
 		Name:   sanitizedName,
@@ -51,13 +39,13 @@ func (c *CharactersBlock) AddTaxon(name string) *TaxonReference {
 	}
 	c.Taxa = append(c.Taxa, taxon)
 
-	// Initialize the matrix row with default "Missing" values for all current characters
-	newRow := make([]CharacterState, len(c.Characters))
-	for i, char := range c.Characters {
+	// Pre-fill the row based on current character count
+	newRow := make([]CharacterState, c.Dimensions)
+	for i := 0; i < c.Dimensions; i++ {
 		newRow[i] = CharacterState{
-			Index: char.Index,
+			Index: i + 1,
 			Type:  StateSingle,
-			Value: []string{c.Format.Missing},
+			Value: []string{InternalMissing},
 		}
 	}
 	c.data = append(c.data, newRow)
@@ -65,66 +53,49 @@ func (c *CharactersBlock) AddTaxon(name string) *TaxonReference {
 	return taxon
 }
 
-// AddCharacterState allows setting a value at a specific character for this taxon.
-func (t *TaxonReference) AddCharacterState(char *Character, value string) *TaxonReference {
-	if char.Index <= 0 || char.Index > len(t.parent.Characters) {
-		return t
+// ResolveStateSymbol takes a user input (which could be a label or a direct symbol) and returns the correct internal symbol for storage.
+func (c *CharactersBlock) ResolveStateSymbol(char *Character, state string) string {
+	// Check if it's one of our internal sentinels
+	if state == InternalMissing || state == InternalGap {
+		return state
 	}
 
-	colIdx := char.Index - 1
-	rowIdx := t.Index
-
-	// Helper: Translate a label (e.g., "light red") into its symbol (e.g., "0")
-	resolveSymbol := func(input string) string {
-		sanitizedInput := core.DecodeName(input)
-		for i, label := range char.StateLabels {
-			if sanitizedInput == label {
-				return strconv.Itoa(i) // Found the label, return its index as the symbol
+	// Search the character's defined StateLabels
+	for i, label := range char.StateLabels {
+		if strings.EqualFold(label, state) {
+			// Found it! Map its index to the allowed FORMAT symbols
+			if i < len(c.Format.Symbols) {
+				return string(c.Format.Symbols[i])
 			}
+			// Fallback if symbols aren't explicitly defined
+			return strconv.Itoa(i)
 		}
-		// If not found in labels, assume it's already a valid symbol (like "?", "-", or "0")
-		return sanitizedInput
 	}
 
-	cs := CharacterState{
+	// If no label matched, assume the user passed a raw symbol directly (e.g., "A", "0")
+	return state
+}
+
+// SetState safely registers character states for a taxon, translating labels to symbols.
+// It accepts multiple states to support Polymorphism (e.g., passing "blue", "green").
+func (t *TaxonReference) SetState(char *Character, states ...string) error {
+	var resolved []string
+
+	// Translate every provided state string into its proper matrix symbol
+	for _, state := range states {
+		resolved = append(resolved, t.parent.ResolveStateSymbol(char, state))
+	}
+
+	stateType := StateSingle
+	if len(resolved) > 1 {
+		stateType = StatePolymorphic
+	}
+
+	// Update the matrix grid
+	t.parent.data[t.Index][char.Index-1] = CharacterState{
 		Index: char.Index,
-		Label: char.Name,
+		Type:  stateType,
+		Value: resolved,
 	}
-
-	// Clean and split the incoming value
-	cleanVal := strings.Trim(value, "(){} ")
-
-	// Use strings.Split for comma-separated or strings.Fields for space-separated
-	// Assuming fields (spaces) based on the current logic
-	var rawValues []string
-	if strings.Contains(cleanVal, " ") {
-		rawValues = strings.Fields(cleanVal)
-	} else {
-		// Handle smushed symbols if the user passed something like "01" instead of "0 1"
-		// If it's a known label like "light_red", it won't hit this branch unless it has no spaces
-		rawValues = []string{cleanVal}
-	}
-
-	// Resolve all extracted values into their proper symbols
-	var resolvedSymbols []string
-	for _, rv := range rawValues {
-		resolvedSymbols = append(resolvedSymbols, resolveSymbol(rv))
-	}
-
-	// Determine the state type based on original brackets
-	if strings.HasPrefix(value, "(") {
-		cs.Type = StatePolymorphic
-	} else if strings.HasPrefix(value, "{") {
-		cs.Type = StateUncertain
-	} else if len(resolvedSymbols) > 1 {
-		// Catch-all: if multiple symbols are resolved without brackets, assume polymorphism
-		cs.Type = StatePolymorphic
-	} else {
-		cs.Type = StateSingle
-	}
-
-	cs.Value = resolvedSymbols
-	t.parent.data[rowIdx][colIdx] = cs
-
-	return t
+	return nil
 }

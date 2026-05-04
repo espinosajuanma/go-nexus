@@ -2,108 +2,131 @@ package characters
 
 import (
 	_ "embed"
+	"fmt"
+	"html/template"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/templater"
 )
 
 //go:embed characters.tmpl
 var charsTmplStr string
 
+const name = "CHARACTERS"
+
 // Render implements the Block interface for CharactersBlock.
 func (c *CharactersBlock) Render() (string, error) {
-	// Prepare and sort Character Labels for the CHARSTATELABELS command
-	type labelView struct {
-		ID     int
-		Name   string
-		States string
-	}
-	var sortedLabels []labelView
-
-	for _, char := range c.Characters {
-		// Only render if the character has a name OR state labels
-		if char.Name != "" || len(char.StateLabels) > 0 {
-			statesStr := ""
-			if len(char.StateLabels) > 0 {
-				var safeStates []string
-				for _, st := range char.StateLabels {
-					if st == "" {
-						safeStates = append(safeStates, "_") // Use underscore for unnamed states
-					} else {
-						safeStates = append(safeStates, core.QuoteName(st))
-					}
-				}
-				statesStr = strings.Join(safeStates, " ")
-			}
-
-			sortedLabels = append(sortedLabels, labelView{
-				ID:     char.Index,
-				Name:   core.QuoteName(char.Name),
-				States: statesStr,
-			})
-		}
+	// Define block-specific template helpers
+	customFuncs := template.FuncMap{
+		"formatState": formatState,
+		"printFormat": printFormat,
 	}
 
-	// Calculate the longest taxon name for matrix alignment
-	maxTaxonLen := 0
-	for _, taxon := range c.Taxa {
-		if len(taxon.Name) > maxTaxonLen {
-			maxTaxonLen = len(core.EncodeName(taxon.Name))
-		}
-	}
-
-	// Flatten the 2D data into a View Model for the template
-	type templateRow struct {
-		PaddedName string
-		States     []CharacterState
-	}
-	var rows []templateRow
-
-	for i, taxon := range c.Taxa {
-		// Calculate dynamic padding
-		taxonName := core.EncodeName(taxon.Name)
-		padding := strings.Repeat(" ", (maxTaxonLen-len(taxonName))+2)
-
-		rows = append(rows, templateRow{
-			PaddedName: taxonName + padding,
-			States:     c.data[i],
-		})
-	}
-
-	// Populate the final structure for the Go Template engine
-	templateData := struct {
-		Title        string
-		Dimensions   int
-		Format       Format
-		SortedLabels []labelView
-		Matrix       []templateRow
-	}{
-		Title:        c.Title,
-		Dimensions:   c.Dimensions,
-		Format:       c.Format,
-		SortedLabels: sortedLabels,
-		Matrix:       rows,
-	}
-
-	tmpl, err := templater.New("characters", charsTmplStr)
+	// Inject the custom functions into the generic templater
+	tmpl, err := templater.New(name, charsTmplStr, customFuncs)
 	if err != nil {
 		return "", err
 	}
-	rendered, err := tmpl.Render(templateData)
 
-	return rendered, err
+	return tmpl.Render(c)
 }
 
-// Render formats the CharacterState back into its proper NEXUS representation.
-func (c CharacterState) Render() string {
-	valStr := strings.Join(c.Value, " ")
-	switch c.Type {
-	case StatePolymorphic:
-		return "(" + valStr + ")"
-	case StateUncertain:
-		return "{" + valStr + "}"
-	default:
-		return valStr
+// Data is exported so the text/template can access the private matrix slice.
+func (c *CharactersBlock) Data() [][]CharacterState {
+	return c.data
+}
+
+// CalculateChunks returns a slice of starting indices [0, 70, 140...] for interleaved rendering.
+func (c *CharactersBlock) CalculateChunks(nchar, chunkSize int) []int {
+	var chunks []int
+	for i := 0; i < nchar; i += chunkSize {
+		chunks = append(chunks, i)
 	}
+	return chunks
+}
+
+// CalculateEndCol safely calculates the end slice index for interleaved segments.
+func (c *CharactersBlock) CalculateEndCol(start, size, max int) int {
+	end := start + size
+	if end > max {
+		return max
+	}
+	return end
+}
+
+// -----------------------------------------------------------------------------
+// Template Helpers
+// -----------------------------------------------------------------------------
+
+// formatState translates internal CharacterState sentinels back to file-ready text.
+func formatState(state CharacterState, format Format) string {
+	var resolved []string
+	for _, v := range state.Value {
+		switch v {
+		case InternalMissing:
+			resolved = append(resolved, format.Missing)
+		case InternalGap:
+			resolved = append(resolved, format.Gap)
+		default:
+			resolved = append(resolved, v)
+		}
+	}
+
+	if state.Type == StatePolymorphic {
+		return "(" + strings.Join(resolved, " ") + ")"
+	}
+	if state.Type == StateUncertain {
+		return "{" + strings.Join(resolved, " ") + "}"
+	}
+
+	return resolved[0]
+}
+
+// printFormat constructs the FORMAT string, only printing non-default values.
+func printFormat(f Format) string {
+	var parts []string
+
+	if f.DataType != "" {
+		parts = append(parts, fmt.Sprintf("DATATYPE=%s", f.DataType))
+	}
+	if f.Missing != "" && f.Missing != "?" {
+		parts = append(parts, fmt.Sprintf("MISSING=%s", f.Missing))
+	}
+	if f.Gap != "" && f.Gap != "-" {
+		parts = append(parts, fmt.Sprintf("GAP=%s", f.Gap))
+	}
+	if f.MatchChar != "" {
+		parts = append(parts, fmt.Sprintf("MATCHCHAR=%s", f.MatchChar))
+	}
+	if f.RespectCase {
+		parts = append(parts, "RESPECTCASE")
+	}
+	if f.Interleave {
+		parts = append(parts, "INTERLEAVE")
+	}
+	if f.Tokens {
+		if f.DataType != Standard {
+			parts = append(parts, "TOKENS")
+		}
+	}
+	if !f.Labels {
+		parts = append(parts, "LABELS=NO")
+	}
+
+	if len(parts) == 0 {
+		return ""
+	}
+	return "\tFORMAT " + strings.Join(parts, " ") + ";"
+}
+
+// MaxTaxonNameLength calculates the length of the longest taxon name for padding matrix rows.
+func (c *CharactersBlock) MaxTaxonNameLength() int {
+	max := 0
+	for _, t := range c.Taxa {
+		// Length of the raw name (snake casting won't change string length)
+		if len(t.Name) > max {
+			max = len(t.Name)
+		}
+	}
+	return max
 }

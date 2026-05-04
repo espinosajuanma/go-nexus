@@ -42,7 +42,7 @@ func main() {
 	for _, char := range charsList {
 		for _, taxon := range cb.Taxa {
 			randState := char.StateLabels[rand.Intn(len(char.StateLabels))]
-			taxon.AddCharacterState(char, randState)
+			taxon.SetState(char, randState)
 		}
 	}
 

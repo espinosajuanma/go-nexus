@@ -9,8 +9,10 @@ func init() {
 	core.RegisterBlock("CHARACTERS", func() core.Block {
 		return &CharactersBlock{
 			Format: Format{
-				Missing: "?",
-				Gap:     "-",
+				Missing:  "?",
+				Gap:      "-",
+				DataType: Standard,
+				Labels:   true,
 			},
 		}
 	})
@@ -24,6 +26,7 @@ func New(n *core.Nexus, dt DataType) *CharactersBlock {
 			DataType: dt,
 			Missing:  "?",
 			Gap:      "-",
+			Labels:   true,
 		},
 		CharStateLabels: make(map[int]string),
 	}
@@ -44,6 +47,8 @@ type CharactersBlock struct {
 	Taxa       []*TaxonReference
 
 	data [][]CharacterState
+
+	Eliminate map[int]bool
 }
 
 // SetNexus implements the NexusAware interface.

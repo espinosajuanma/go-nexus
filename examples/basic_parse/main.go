@@ -40,7 +40,7 @@ func main() {
 	if char, ok := core.GetBlock[*characters.CharactersBlock](nex); ok {
 		char.AddTaxon("Sarasa 1")
 		fmt.Println("-- Found a CHARACTERS Block --")
-		fmt.Printf("Characters Count: %d\n", char.Dimensions.NChar)
+		fmt.Printf("Characters Count: %d\n", char.Dimensions)
 		fmt.Printf("Data Type: %s\n", char.Format.DataType)
 	} else {
 		fmt.Println("-- No CHARACTERS Block found --")

@@ -1,21 +1,56 @@
 BEGIN CHARACTERS;
 {{- if .Title}}
-	TITLE {{.Title}};
+	TITLE {{.Title | quote}};
 {{- end}}
 	DIMENSIONS NCHAR={{.Dimensions}};
-{{- if or .Format.DataType .Format.Missing .Format.Gap .Format.Symbols}}
-	FORMAT{{if .Format.DataType}} DATATYPE={{.Format.DataType}}{{end}}{{if .Format.Missing}} MISSING={{.Format.Missing}}{{end}}{{if .Format.Gap}} GAP={{.Format.Gap}}{{end}}{{if .Format.Symbols}} SYMBOLS="{{.Format.Symbols}}"{{end}};
+
+{{- /* Print the FORMAT command dynamically */}}
+{{- $formatCmd := printFormat .Format}}
+{{- if $formatCmd}}
+{{$formatCmd}}
 {{- end}}
-{{- if .SortedLabels}}
+
+{{- /* Print CHARSTATELABELS if there are names defined */}}
+{{- $hasLabels := false}}
+{{- range .Characters}}{{if .Name}}{{$hasLabels = true}}{{end}}{{end}}
+{{- if $hasLabels}}
 	CHARSTATELABELS
-{{- range .SortedLabels}}
-		{{.ID}} {{if .Name}}{{.Name}}{{end}}{{if .States}} / {{.States}}{{end}},
+{{- $first := true}}
+{{- range .Characters}}
+	{{- if or .Name .StateLabels}}
+		{{- if not $first}},{{end}}{{$first = false}}
+		{{.Index}} {{if .Name}}{{.Name | quote}}{{end}} {{if .StateLabels}}/ {{range .StateLabels}}{{. | quote}} {{end}}{{end}}
+	{{- end}}
+{{- end}};
 {{- end}}
-	;
-{{- end}}
+
 	MATRIX
-{{- range .Matrix}}
-	{{.PaddedName}}{{range .States}}{{.Render}}{{end}}
+{{- /* MATRIX RENDERING LOGIC */}}
+{{- $format := .Format}}
+{{- $maxLen := .MaxTaxonNameLength}}
+{{- if not .Format.Interleave}}
+{{- /* STANDARD MATRIX: One row per taxon */}}
+{{- range $rowIndex, $taxon := .Taxa}}
+	{{if $format.Labels}}{{ $taxon.Name | snake | quote | pad $maxLen }}{{end}}
+	{{- range $colIndex, $state := (index $.Data $taxon.Index)}}
+		{{- if $format.Tokens}} {{end}}{{formatState $state $format}}
+	{{- end}}
+{{- end}}
+{{- else}}
+{{- /* INTERLEAVED MATRIX: Blocks of 70 characters */}}
+{{- $nchar := .Dimensions}}
+{{- $chunkSize := 70}}
+{{- $chunks := (call $.CalculateChunks $nchar $chunkSize) }}
+{{- range $cIdx, $startCol := $chunks}}
+	{{- $endCol := (call $.CalculateEndCol $startCol $chunkSize $nchar)}}
+	{{- if gt $cIdx 0}}{{"\n"}}{{end}}
+	{{- range $rowIndex, $taxon := $.Taxa}}
+	{{if $format.Labels}}{{ $taxon.Name | snake | quote | pad $maxLen }}{{end}}
+		{{- range $colIndex, $state := (slice (index $.Data $taxon.Index) $startCol $endCol)}}
+			{{- if $format.Tokens}} {{end}}{{formatState $state $format}}
+		{{- end}}
+	{{- end}}
+{{- end}}
 {{- end}}
 	;
 END;
