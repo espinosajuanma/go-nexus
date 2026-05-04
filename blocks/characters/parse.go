@@ -44,7 +44,7 @@ func (c *CharactersBlock) Parse(s *scanner.Scanner) error {
 					}
 					if valIdx < len(tokens) {
 						count, _ := strconv.Atoi(tokens[valIdx])
-						c.Dimensions.NChar = count
+						c.Dimensions = count
 						// Pre-populate Character objects
 						for j := 1; j <= count; j++ {
 							c.Characters = append(c.Characters, &Character{Index: j})
@@ -129,7 +129,7 @@ func parseCharStateLabelsRelational(tokens []string, c *CharactersBlock) {
 
 // parseMatrixRelational handles the MATRIX command in a relational format, supporting polymorphic and uncertain states.
 func parseMatrixRelational(s *scanner.Scanner, c *CharactersBlock) error {
-	nchar := c.Dimensions.NChar
+	nchar := c.Dimensions
 	for {
 		taxonToken, err := s.NextToken()
 		if err != nil {

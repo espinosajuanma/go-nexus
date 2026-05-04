@@ -21,17 +21,18 @@ const (
 	StateUncertain   StateType = "UNCERTAIN"
 )
 
-// Dimensions captures the NCHAR value for the CHARACTERS block.
-type Dimensions struct {
-	NChar int
-}
-
 // Format specifies the format of the data MATRIX.
 type Format struct {
-	DataType DataType
-	Missing  string
-	Gap      string
-	Symbols  string
+	DataType    DataType
+	Missing     string
+	Gap         string
+	Symbols     string
+	Equate      map[string]string
+	MatchChar   string
+	RespectCase bool
+	Interleave  bool
+	Tokens      bool
+	Labels      bool
 }
 
 // Character represents a single column in the NEXUS matrix.

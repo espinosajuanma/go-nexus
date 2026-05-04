@@ -21,7 +21,7 @@ func (c *CharactersBlock) AddCharacter(name string, states ...string) *Character
 		StateLabels: sanitizedStates,
 	}
 	c.Characters = append(c.Characters, char)
-	c.Dimensions.NChar = len(c.Characters)
+	c.Dimensions = len(c.Characters)
 
 	// Expand every existing taxon row to include a "Missing" state for this new character
 	for i := range c.data {

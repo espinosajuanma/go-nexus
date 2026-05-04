@@ -74,7 +74,7 @@ func (c *CharactersBlock) Render() (string, error) {
 	// Populate the final structure for the Go Template engine
 	templateData := struct {
 		Title        string
-		Dimensions   Dimensions
+		Dimensions   int
 		Format       Format
 		SortedLabels []labelView
 		Matrix       []templateRow

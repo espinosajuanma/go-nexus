@@ -35,7 +35,7 @@ func New(n *core.Nexus, dt DataType) *CharactersBlock {
 type CharactersBlock struct {
 	nexus           *core.Nexus
 	Title           string
-	Dimensions      Dimensions
+	Dimensions      int
 	Format          Format
 	CharStateLabels map[int]string // to be deprecated
 	Matrix          []MatrixRow    // to be deprecated
