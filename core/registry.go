@@ -32,22 +32,4 @@ func (n *Nexus) RegisterTaxon(name string) {
 			return
 		}
 	}
-
-	// If no block implements TaxaRegistry, we can choose to create a new TAXA block
-	factory, exists := BlockRegistry["TAXA"]
-	if !exists {
-		return
-	}
-
-	// Create the block, link it to Nexus, and append it
-	newBlock := factory()
-	if aware, ok := newBlock.(NexusAware); ok {
-		aware.SetNexus(n)
-	}
-	n.Blocks = append(n.Blocks, newBlock)
-
-	// Cast the newly created block to our interface and add the taxon
-	if registry, ok := newBlock.(TaxaRegistry); ok {
-		registry.AddTaxon(sanitizedName)
-	}
 }

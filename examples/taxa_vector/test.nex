@@ -1,0 +1,22 @@
+#NEXUS
+
+BEGIN TAXA;
+	TITLE 'Vector Format Demonstration';
+	DIMENSIONS NTAX=8;
+	TAXLABELS frog toad snake lizard eagle hawk mouse rat;
+
+	[ TAXSET in Vector format ]
+	[ 1 = include taxon, 0 = exclude taxon ]
+	TAXSET amphibians (VECTOR) = 11000000;
+	TAXSET reptiles   (VECTOR) = 00110000;
+	TAXSET birds      (VECTOR) = 00001100;
+	TAXSET mammals    (VECTOR) = 00000011;
+
+	[ TAXPARTITION in Vector format ]
+	[ Assigns a partition name to each taxon by its index position ]
+	TAXPARTITION clades (VECTOR) = anamniote anamniote amniote amniote amniote amniote amniote amniote;
+	
+	[ TAXPARTITION in Vector format with NoTokens ]
+	[ Assigns a single-character symbol to each taxon without needing whitespace ]
+	TAXPARTITION clades_short (VECTOR NOTOKENS) = AABBBBBB;
+END;

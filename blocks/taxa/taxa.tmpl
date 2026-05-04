@@ -1,11 +1,25 @@
 BEGIN TAXA;
 {{- if .Title}}
-	TITLE {{.Title}};
+	TITLE {{.Title | quote}};
 {{- end}}
-	DIMENSIONS NTAX={{.Dimensions.Count}};
+	DIMENSIONS NTAX={{.Dimensions}};
 	TAXLABELS
 {{- range .TaxLabels}}
-		{{.}}
+		{{. | quote}}
 {{- end}}
 	;
+{{- range $name, $set := .TaxSets}}
+	TAXSET {{$name | quote}} {{- if eq $set.Format "VECTOR"}} (VECTOR){{- end}} = {{- range $set.TaxaList}} {{. | quote}}{{- end}};
+{{- end}}
+{{- range $name, $part := .TaxPartitions}}
+	TAXPARTITION {{$name | quote}} {{- if eq $part.Format "VECTOR"}} (VECTOR){{- end}} =
+	{{- if eq $part.Format "VECTOR"}}
+		{{- range (index $part.Subsets "VECTOR_DATA")}} {{. | quote}}{{- end}};
+	{{- else}}
+		{{- $first := true -}}
+		{{- range $subName, $taxa := $part.Subsets}}
+			{{- if not $first}}, {{end}}{{$first = false}}{{$subName | quote}}:{{range $taxa}} {{. | quote}}{{end}}
+		{{- end}};
+	{{- end}}
+{{- end}}
 END;

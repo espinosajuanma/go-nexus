@@ -58,6 +58,13 @@ func snake(s string) string {
 // quote wraps a string in double quotes and escapes any existing double quotes.
 func quote(s string) string {
 	normalized := strings.ReplaceAll(s, "''", "'")
+
+	// Only quote if there are spaces or special characters
+	if !strings.ContainsAny(normalized, " '\"") {
+		return normalized
+	}
+
+	// Escape existing single quotes by doubling them
 	escaped := strings.ReplaceAll(normalized, "'", "''")
 	return "'" + escaped + "'"
 }

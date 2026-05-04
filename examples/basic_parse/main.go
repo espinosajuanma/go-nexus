@@ -31,7 +31,7 @@ func main() {
 
 	if taxa, ok := core.GetBlock[*taxa.TaxaBlock](nex); ok {
 		fmt.Println("-- Found a TAXA Block --")
-		fmt.Printf("Taxa Count: %d\n", taxa.Dimensions.Count)
+		fmt.Printf("Taxa Count: %d\n", taxa.Dimensions)
 		fmt.Printf("Taxa Labels: %v\n", taxa.TaxLabels)
 	} else {
 		fmt.Println("-- No TAXA Block found --")

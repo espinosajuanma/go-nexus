@@ -22,13 +22,15 @@ func main() {
 
 	// Create the CHARACTERS block
 	cb := characters.New(nex, characters.Standard)
-	cb.SetTitle("Morphology_Matrix")
+	cb.SetTitle("Morphology Matrix")
+
+	taxons := []string{"fish", "frog", "snake", "mouse"}
 
 	// Add taxa to the block
-	cb.AddTaxon("fish fish")
-	cb.AddTaxon("frog")
-	cb.AddTaxon("snake")
-	cb.AddTaxon("mouse")
+	for _, taxon := range taxons {
+		tb.AddTaxon(taxon)
+		cb.AddTaxon(taxon)
+	}
 
 	// Add characters to the block
 	eyeColor := cb.AddCharacter("eye color", "light red", "blue", "green")

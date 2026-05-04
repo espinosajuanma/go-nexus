@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/espinosajuanma/nexus/scanner"
@@ -46,4 +47,10 @@ func ReadUntilSemicolon(s *scanner.Scanner) ([]string, error) {
 		tokens = append(tokens, t)
 	}
 	return tokens, nil
+}
+
+// IsAllDigits checks if a string consists entirely of digits (0-9)
+func IsAllDigits(s string) bool {
+	matched, _ := regexp.MatchString(`^\d+$`, s)
+	return matched
 }
