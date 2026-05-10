@@ -21,6 +21,25 @@ func NewScanner(r io.Reader) *Scanner {
 	return &Scanner{reader: bufio.NewReader(r)}
 }
 
+// NextToken returns the next NEXUS token. It skips whitespace and comments.
+// Returns an empty string and io.EOF when the end of the file is reached.
+func (s *Scanner) NextToken() (string, error) {
+	// Consume the peeked token if one exists
+	if s.peekedToken != nil {
+		tok := *s.peekedToken
+		err := s.peekedErr
+
+		// Reset peek state
+		s.peekedToken = nil
+		s.peekedErr = nil
+
+		return tok, err
+	}
+
+	// Otherwise, read a fresh token using the helper
+	return s.readNextToken()
+}
+
 // PeekToken looks at the next token without advancing the scanner's position.
 func (s *Scanner) PeekToken() (string, error) {
 	if s.peekedToken != nil {
@@ -33,55 +52,19 @@ func (s *Scanner) PeekToken() (string, error) {
 	return tok, err
 }
 
-// NextToken returns the next NEXUS token. It skips whitespace and comments.
-// Returns an empty string and io.EOF when the end of the file is reached.
-func (s *Scanner) NextToken() (string, error) {
-	for {
-		ch, _, err := s.reader.ReadRune()
-		if err != nil {
-			return "", err
-		}
-
-		// Skip whitespace
-		if unicode.IsSpace(ch) {
-			continue
-		}
-
-		// Handle comments (which can be nested)
-		if ch == '[' {
-			if err := s.skipComment(); err != nil {
-				return "", err
-			}
-			continue
-		}
-
-		// Handle quoted words
-		if ch == '\'' {
-			return s.readQuotedWord()
-		}
-
-		// Handle punctuation as single-character tokens
-		if isPunctuation(ch) {
-			return string(ch), nil
-		}
-
-		// Read unquoted word
-		s.reader.UnreadRune()
-		return s.readWord()
-	}
-}
-
 // ReadRawUntilBlockEnd reads all characters until it reaches END; or ENDBLOCK;
-// It ignores END; if it occurs within a quote or a nested comment.
 // It returns the raw string content excluding the END; command.
 func (s *Scanner) ReadRawUntilBlockEnd() (string, error) {
+	var content bytes.Buffer
+	var token bytes.Buffer
+
 	if s.peekedToken != nil {
+		content.WriteString(*s.peekedToken)
+		token.WriteString(*s.peekedToken)
 		s.peekedToken = nil
 		s.peekedErr = nil
 	}
 
-	var content bytes.Buffer
-	var token bytes.Buffer
 	inComment := 0
 	inQuote := false
 
@@ -160,30 +143,22 @@ func (s *Scanner) readNextToken() (string, error) {
 			return "", err
 		}
 
-		// Skip whitespace
 		if unicode.IsSpace(ch) {
 			continue
 		}
-
-		// Handle comments (which can be nested)
 		if ch == '[' {
 			if err := s.skipComment(); err != nil {
 				return "", err
 			}
 			continue
 		}
-
-		// Handle quoted words
 		if ch == '\'' {
 			return s.readQuotedWord()
 		}
-
-		// Handle punctuation as single-character tokens
 		if isPunctuation(ch) {
 			return string(ch), nil
 		}
 
-		// Read unquoted word
 		s.reader.UnreadRune()
 		return s.readWord()
 	}
@@ -251,5 +226,10 @@ func (s *Scanner) readWord() (string, error) {
 
 // isPunctuation checks if a rune is a standard NEXUS punctuation mark.
 func isPunctuation(ch rune) bool {
-	return strings.ContainsRune("(){}[]/\\,;:=*\"+-<>~", ch)
+	switch ch {
+	case '(', ')', '{', '}', '[', ']', '/', '\\', ',', ';', ':', '=', '*', '"', '+', '-', '<', '>', '~':
+		return true
+	default:
+		return false
+	}
 }
