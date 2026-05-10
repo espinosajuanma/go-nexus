@@ -1,0 +1,67 @@
+#NEXUS
+
+BEGIN TAXA;
+  TITLE Example_Taxa;
+	DIMENSIONS NTAX=4;
+	TAXLABELS fish frog snake mouse;
+END;
+
+BEGIN CHARACTERS;
+  TITLE FantasyMatrix;
+	DIMENSIONS NCHAR=20;
+	FORMAT DATATYPE=STANDARD;
+  CHARSTATELABELS
+    1 'roars with might.',
+    2 'scurries in fright.',
+    3 'naps, purring light.',
+    4 'chases, day and night.',
+    5 'sings a sweet flight.',
+    6 'swims in ocean light.',
+    7 'ambles, a furry sight.',
+    8 'slithers, out of sight.',
+    9 'leaps with all its might.',
+    10 'buzzes, taking flight.',
+    11 'howls to the moon so bright.',
+    12 'sneaks in the fading light.',
+    13 'watches through the night.',
+    14 'grazes, graceful, white.',
+    15 'gallops with sheer delight.',
+    16 'swings, holding tight.',
+    17 'trumpets, a grand unite.',
+    18 'stretches, reaching height.',
+    19 'waddles, black and white.',
+    20 'twitches, quick and slight.',
+    ;
+	MATRIX
+	fish  01010101010101010101
+	frog  000000100000(1 0)0000010
+	snake 10101010111000111100
+	mouse 11111111000011110001
+    ;
+END;
+
+BEGIN TREES;
+  TRANSLATE
+    1 fish,
+    2 frog,
+    3 snake,
+    4 mouse
+  ;
+  TREE tree1 = [&U] ((1,2),(3,4));
+  TREE * tree2 = [&R] (fish,(frog,(snake,mouse)));
+END;
+
+BEGIN SARASA;
+    This is a generic block.
+    It should get the same content
+
+    With spaces and 'normal';
+    content;
+    ;
+    ;
+END;
+
+BEGIN OTHER;
+    This is another block
+    [Comment here]
+END;

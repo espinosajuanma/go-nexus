@@ -71,6 +71,87 @@ func (s *Scanner) NextToken() (string, error) {
 	}
 }
 
+// ReadRawUntilBlockEnd reads all characters until it reaches END; or ENDBLOCK;
+// It ignores END; if it occurs within a quote or a nested comment.
+// It returns the raw string content excluding the END; command.
+func (s *Scanner) ReadRawUntilBlockEnd() (string, error) {
+	if s.peekedToken != nil {
+		s.peekedToken = nil
+		s.peekedErr = nil
+	}
+
+	var content bytes.Buffer
+	var token bytes.Buffer
+	inComment := 0
+	inQuote := false
+
+	for {
+		ch, _, err := s.reader.ReadRune()
+		if err != nil {
+			return "", err
+		}
+		content.WriteRune(ch)
+
+		// Handle Quotes
+		if ch == '\'' {
+			inQuote = !inQuote
+			token.Reset()
+			continue
+		}
+		if inQuote {
+			continue
+		}
+
+		// Handle Nested Comments
+		if ch == '[' {
+			inComment++
+			token.Reset()
+			continue
+		}
+		if ch == ']' {
+			if inComment > 0 {
+				inComment--
+			}
+			token.Reset()
+			continue
+		}
+		if inComment > 0 {
+			continue
+		}
+
+		// Handle Spaces
+		if unicode.IsSpace(ch) {
+			cmd := strings.ToUpper(token.String())
+			// Don't reset the token if it's "END", so we can catch instances like "END  ;"
+			if cmd != "END" && cmd != "ENDBLOCK" {
+				token.Reset()
+			}
+			continue
+		}
+
+		// Handle Semicolons and Commands
+		if isPunctuation(ch) {
+			if ch == ';' {
+				cmd := strings.ToUpper(token.String())
+				if cmd == "END" || cmd == "ENDBLOCK" {
+					full := content.String()
+					// Strip out the END; / ENDBLOCK; part from the string
+					upperFull := strings.ToUpper(full)
+					idx := strings.LastIndex(upperFull, cmd)
+					if idx != -1 {
+						return full[:idx], nil
+					}
+					return full, nil
+				}
+			}
+			token.Reset()
+			continue
+		}
+
+		token.WriteRune(ch)
+	}
+}
+
 // readNextToken contains the core tokenization logic.
 func (s *Scanner) readNextToken() (string, error) {
 	for {

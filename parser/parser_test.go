@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/espinosajuanma/nexus/blocks/characters"
+	_ "github.com/espinosajuanma/nexus/blocks/generic"
 	"github.com/espinosajuanma/nexus/blocks/taxa"
 	"github.com/espinosajuanma/nexus/blocks/trees"
 	"github.com/espinosajuanma/nexus/core"

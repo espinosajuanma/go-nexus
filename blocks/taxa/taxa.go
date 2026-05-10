@@ -10,14 +10,19 @@ import (
 
 // init automatically registers the TAXA block with the core parser.
 func init() {
-	core.RegisterBlock("TAXA", func() core.Block {
-		return &TaxaBlock{}
+	core.RegisterBlock("TAXA", func(name string) core.Block {
+		return &TaxaBlock{
+			Name: name,
+		}
 	})
 }
 
 // New creates, appends, and returns a new TAXA block.
 func New(n *core.Nexus) *TaxaBlock {
-	tb := &TaxaBlock{nexus: n}
+	tb := &TaxaBlock{
+		nexus: n,
+		Name:  "TAXA",
+	}
 	n.Blocks = append(n.Blocks, tb)
 	return tb
 }
@@ -25,6 +30,7 @@ func New(n *core.Nexus) *TaxaBlock {
 // TaxaBlock specifies information about taxa.
 type TaxaBlock struct {
 	nexus         *core.Nexus
+	Name          string
 	Title         string
 	Dimensions    int
 	TaxLabels     []string

@@ -33,13 +33,13 @@ type Block interface {
 
 // Export serializes the Nexus structure to the provided io.Writer.
 func (n *Nexus) Export(w io.Writer) error {
-	fmt.Fprintf(w, "#NEXUS\n\n")
+	fmt.Fprintf(w, "#NEXUS\n")
 	for _, block := range n.Blocks {
 		rendered, err := block.Render()
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(w, "%s\n", rendered)
+		fmt.Fprintf(w, "\n%s\n", rendered)
 	}
 	return nil
 }

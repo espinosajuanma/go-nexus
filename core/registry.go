@@ -10,7 +10,7 @@ type TaxaRegistry interface {
 }
 
 // BlockFactory is a function that returns a new, initialized Block.
-type BlockFactory func() Block
+type BlockFactory func(name string) Block
 
 // BlockRegistry holds the mapping of block names to their factory functions.
 var BlockRegistry = make(map[string]BlockFactory)

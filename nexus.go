@@ -7,6 +7,7 @@ import (
 	"github.com/espinosajuanma/nexus/parser"
 
 	_ "github.com/espinosajuanma/nexus/blocks/characters"
+	_ "github.com/espinosajuanma/nexus/blocks/generic"
 	_ "github.com/espinosajuanma/nexus/blocks/taxa"
 	_ "github.com/espinosajuanma/nexus/blocks/trees"
 )

@@ -6,7 +6,7 @@ import (
 
 // init automatically registers the CHARACTERS block with the core parser.
 func init() {
-	core.RegisterBlock("CHARACTERS", func() core.Block {
+	core.RegisterBlock("CHARACTERS", func(name string) core.Block {
 		return &CharactersBlock{
 			Format: Format{
 				Missing:  "?",
@@ -14,6 +14,7 @@ func init() {
 				DataType: Standard,
 				Labels:   true,
 			},
+			Name: name,
 		}
 	})
 }
@@ -22,6 +23,7 @@ func init() {
 func New(n *core.Nexus, dt DataType) *CharactersBlock {
 	cb := &CharactersBlock{
 		nexus: n,
+		Name:  "CHARACTERS",
 		Format: Format{
 			DataType: dt,
 			Missing:  "?",
@@ -37,6 +39,7 @@ func New(n *core.Nexus, dt DataType) *CharactersBlock {
 // CharactersBlock defines characters and includes character data.
 type CharactersBlock struct {
 	nexus           *core.Nexus
+	Name            string
 	Title           string
 	Dimensions      int
 	Format          Format

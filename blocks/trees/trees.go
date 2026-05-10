@@ -5,9 +5,10 @@ import (
 )
 
 func init() {
-	core.RegisterBlock("TREES", func() core.Block {
+	core.RegisterBlock("TREES", func(name string) core.Block {
 		return &TreesBlock{
 			Translate: make(map[string]string),
+			Name:      name,
 		}
 	})
 }
@@ -17,6 +18,7 @@ func New(n *core.Nexus) *TreesBlock {
 	tb := &TreesBlock{
 		nexus:     n,
 		Translate: make(map[string]string),
+		Name:      "TREES",
 	}
 	n.Blocks = append(n.Blocks, tb)
 	return tb
@@ -25,6 +27,7 @@ func New(n *core.Nexus) *TreesBlock {
 // TreesBlock stores information about trees.
 type TreesBlock struct {
 	nexus     *core.Nexus
+	Name      string
 	Translate map[string]string
 	Trees     []Tree
 }

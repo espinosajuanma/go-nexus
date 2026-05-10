@@ -43,10 +43,12 @@ func Parse(r io.Reader) (*core.Nexus, error) {
 				return nil, err
 			}
 
-			factory, exists := core.BlockRegistry[strings.ToUpper(blockName)]
+			name := strings.ToUpper(blockName)
+
+			factory, exists := core.BlockRegistry[name]
 			if exists {
 				// Create a new instance of the block
-				block := factory()
+				block := factory(name)
 
 				// Tell the block to parse its own contents
 				if err := block.Parse(scanner); err != nil {
@@ -54,10 +56,15 @@ func Parse(r io.Reader) (*core.Nexus, error) {
 				}
 				nex.Blocks = append(nex.Blocks, block)
 			} else {
-				// If not registered, modularity allows us to safely ignore it.
-				if err := SkipBlock(scanner); err != nil {
-					return nil, fmt.Errorf("failed to skip unknown block %s: %w", blockName, err)
+				factory, exist := core.BlockRegistry["GENERIC"]
+				if !exist {
+					return nil, fmt.Errorf("unknown block type '%s' and no GENERIC block registered", blockName)
 				}
+				block := factory(name)
+				if err := block.Parse(scanner); err != nil {
+					return nil, fmt.Errorf("error parsing GENERIC block for unknown block %s: %w", blockName, err)
+				}
+				nex.Blocks = append(nex.Blocks, block)
 			}
 		}
 	}
