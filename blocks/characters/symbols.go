@@ -1,10 +1,5 @@
 package characters
 
-const (
-	InternalMissing = "\x00"
-	InternalGap     = "\x01"
-)
-
 // DefaultSymbols provides the standard allowed character states for NEXUS datatypes.
 var DefaultSymbols = map[DataType][]string{
 	DNA:        {"A", "C", "G", "T"},

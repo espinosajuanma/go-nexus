@@ -508,22 +508,6 @@ func (c *CharactersBlock) decomposeStateToken(token string, s *scanner.Scanner) 
 	return states, nil
 }
 
-// resolveSpecialSymbols converts literal '?' or '-' into internal sentinels.
-func (c *CharactersBlock) resolveSpecialSymbols(vals []string) []string {
-	resolved := make([]string, len(vals))
-	for i, v := range vals {
-		switch v {
-		case c.Format.Missing:
-			resolved[i] = InternalMissing
-		case c.Format.Gap:
-			resolved[i] = InternalGap
-		default:
-			resolved[i] = v
-		}
-	}
-	return resolved
-}
-
 // applyEquates maps a symbol to its expanded values (e.g. "R" -> "A" and "G")
 func (c *CharactersBlock) applyEquates(obs []StateObservation) []StateObservation {
 	var final []StateObservation
