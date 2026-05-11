@@ -196,7 +196,19 @@ func (c *CharactersBlock) parseFormat(s *scanner.Scanner) error {
 			case "GAP":
 				c.Format.Gap = strings.Trim(val, "\"'")
 			case "SYMBOLS":
-				c.Format.Symbols = strings.Trim(val, "\"'")
+				cleanVal := strings.Trim(val, "\"'")
+				var parsedSymbols []string
+
+				// Check if there are spaces. If so, split by space.
+				if strings.Contains(cleanVal, " ") {
+					parsedSymbols = strings.Fields(cleanVal)
+				} else {
+					// If smushed (e.g., "012"), split character by character
+					for _, ch := range cleanVal {
+						parsedSymbols = append(parsedSymbols, string(ch))
+					}
+				}
+				c.Format.Symbols = parsedSymbols
 			case "MATCHCHAR":
 				c.Format.MatchChar = strings.Trim(val, "\"'")
 			case "LABELS":

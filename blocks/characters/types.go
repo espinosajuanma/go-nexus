@@ -26,7 +26,7 @@ type Format struct {
 	DataType     DataType
 	Missing      string
 	Gap          string
-	Symbols      string
+	Symbols      []string
 	Equate       map[string]string
 	MatchChar    string
 	RespectCase  bool

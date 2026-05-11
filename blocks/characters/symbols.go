@@ -6,12 +6,12 @@ const (
 )
 
 // DefaultSymbols provides the standard allowed character states for NEXUS datatypes.
-var DefaultSymbols = map[DataType]string{
-	DNA:        "ACGT",
-	RNA:        "ACGU",
-	Nucleotide: "ACGTU",
-	Protein:    "ARNDCQEGHILKMFPSTWYV*", // * is often used for stop codons
-	Standard:   "01",                    // Standard morphology usually defaults to 0 and 1 if undeclared
+var DefaultSymbols = map[DataType][]string{
+	DNA:        {"A", "C", "G", "T"},
+	RNA:        {"A", "C", "G", "U"},
+	Nucleotide: {"A", "C", "G", "T", "U"},
+	Protein:    {"A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V", "*"}, // * is often used for stop codons
+	Standard:   {"0", "1"},
 }
 
 // DefaultEquates provides the standard IUPAC ambiguity mappings.

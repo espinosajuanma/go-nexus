@@ -9,31 +9,17 @@ func init() {
 	core.RegisterBlock("CHARACTERS", func(name string) core.Block {
 		return &CharactersBlock{
 			Format: Format{
-				Missing:  "?",
-				Gap:      "-",
-				DataType: Standard,
-				Labels:   true,
+				Missing:     "?",
+				Gap:         "-",
+				DataType:    Standard,
+				Labels:      true,
+				Symbols:     DefaultSymbols[Standard],
+				MatchChar:   ".",
+				RespectCase: false,
 			},
 			Name: name,
 		}
 	})
-}
-
-// New creates, appends, and returns a new CHARACTERS block.
-func New(n *core.Nexus, dt DataType) *CharactersBlock {
-	cb := &CharactersBlock{
-		nexus: n,
-		Name:  "CHARACTERS",
-		Format: Format{
-			DataType: dt,
-			Missing:  "?",
-			Gap:      "-",
-			Labels:   true,
-		},
-		CharStateLabels: make(map[int]string),
-	}
-	n.Blocks = append(n.Blocks, cb)
-	return cb
 }
 
 // CharactersBlock defines characters and includes character data.
@@ -52,6 +38,23 @@ type CharactersBlock struct {
 	data [][]CharacterState
 
 	Eliminate map[int]bool
+}
+
+// New creates, appends, and returns a new CHARACTERS block.
+func New(n *core.Nexus, dt DataType) *CharactersBlock {
+	cb := &CharactersBlock{
+		nexus: n,
+		Name:  "CHARACTERS",
+		Format: Format{
+			DataType: dt,
+			Missing:  "?",
+			Gap:      "-",
+			Labels:   true,
+		},
+		CharStateLabels: make(map[int]string),
+	}
+	n.Blocks = append(n.Blocks, cb)
+	return cb
 }
 
 // SetNexus implements the NexusAware interface.

@@ -63,9 +63,8 @@ func (c *CharactersBlock) ResolveStateSymbol(char *Character, state string) stri
 	// Search the character's defined StateLabels
 	for i, label := range char.StateLabels {
 		if strings.EqualFold(label, state) {
-			// Found it! Map its index to the allowed FORMAT symbols
 			if i < len(c.Format.Symbols) {
-				return string(c.Format.Symbols[i])
+				return c.Format.Symbols[i]
 			}
 			// Fallback if symbols aren't explicitly defined
 			return strconv.Itoa(i)
