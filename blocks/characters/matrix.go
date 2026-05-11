@@ -7,94 +7,158 @@ import (
 	"github.com/espinosajuanma/nexus/core"
 )
 
-// AddCharacter registers a new character and initializes it with the InternalMissing sentinel.
-func (c *CharactersBlock) AddCharacter(name string, states ...string) *Character {
+type Matrix struct {
+	Characters []*Character
+	Taxa       []*Taxon
+	data       [][]CharacterState
+	parent     *CharactersBlock
+}
+
+// GetStateByIndex retrieves the CharacterState for a given taxon and character index.
+func (m *Matrix) GetStateByIndex(taxonIndex, charIndex int) CharacterState {
+	if taxonIndex >= 0 && taxonIndex < len(m.data) && charIndex >= 0 && charIndex < len(m.data[taxonIndex]) {
+		return m.data[taxonIndex][charIndex]
+	}
+	return CharacterState{
+		Index: charIndex + 1,
+		Type:  StateSingle,
+	}
+}
+
+// SetStateByIndex allows direct manipulation of the matrix grid using taxon and character indices.
+func (m *Matrix) SetStateByIndex(taxonIndex, charIndex int, cs CharacterState) {
+	if taxonIndex >= 0 && taxonIndex < len(m.data) && charIndex >= 0 && charIndex < len(m.data[taxonIndex]) {
+		m.data[taxonIndex][charIndex] = cs
+	}
+}
+
+// GetState is a convenient wrapper that allows retrieving states using taxon and character references.
+func (m *Matrix) GetState(taxon *Taxon, char *Character) CharacterState {
+	return m.GetStateByIndex(taxon.Index, char.Index-1)
+}
+
+// SetState is a convenient wrapper that allows setting states using taxon and character references.
+func (m *Matrix) SetState(taxon *Taxon, char *Character, cs CharacterState) {
+	m.SetStateByIndex(taxon.Index, char.Index-1, cs)
+}
+
+// Character represents a single column in the NEXUS matrix.
+type Character struct {
+	Index       int
+	Name        string
+	StateLabels []string
+}
+
+// Taxon represents a single row in the NEXUS matrix.
+type Taxon struct {
+	Index  int
+	Name   string
+	matrix *Matrix // Back-pointer for fluent API
+	block  *CharactersBlock
+}
+
+func (t *Taxon) SetState(char *Character, stateType StateType, states ...string) error {
+	cs := CharacterState{
+		Index: char.Index,
+		Type:  stateType,
+	}
+
+	for _, s := range states {
+		sym := t.block.Matrix.ResolveStateSymbol(char, s)
+		cs.Observations = append(cs.Observations, StateObservation{
+			Symbol: sym,
+			Weight: 1.0,
+		})
+	}
+
+	t.matrix.SetState(t, char, cs)
+	return nil
+}
+
+// MatrixChunk defines the start and end column indices for an interleaved block.
+type MatrixChunk struct {
+	Start int
+	End   int
+}
+
+// AddCharacter registers a new character and initializes it as missing data.
+func (m *Matrix) AddCharacter(name string, states ...string) *Character {
 	char := &Character{
-		Index:       len(c.Characters) + 1,
+		Index:       len(m.Characters) + 1,
 		Name:        core.DecodeName(name),
 		StateLabels: states,
 	}
-	c.Characters = append(c.Characters, char)
-	c.Dimensions = len(c.Characters)
+	m.Characters = append(m.Characters, char)
+	m.parent.Dimensions = len(m.Characters)
 
-	// Fill existing rows with the Missing sentinel
-	for i := range c.data {
-		c.data[i] = append(c.data[i], CharacterState{
+	// Initialize the new character for all taxa as missing
+	for i := range m.data {
+		m.data[i] = append(m.data[i], CharacterState{
 			Index: char.Index,
-			Type:  StateSingle,
-			Value: []string{InternalMissing}, // Decoupled sentinel
+			Type:  StateMissing,
 		})
 	}
 	return char
 }
 
 // AddTaxon registers a new taxon and prepares its matrix row.
-func (c *CharactersBlock) AddTaxon(name string) *TaxonReference {
+func (m *Matrix) AddTaxon(name string) *Taxon {
 	sanitizedName := core.DecodeName(name)
 
-	taxon := &TaxonReference{
-		Index:  len(c.Taxa),
+	taxon := &Taxon{
+		Index:  len(m.Taxa),
 		Name:   sanitizedName,
-		parent: c,
+		matrix: m, // Set back-pointer for fluent API
+		block:  m.parent,
 	}
-	c.Taxa = append(c.Taxa, taxon)
+	m.Taxa = append(m.Taxa, taxon)
 
 	// Pre-fill the row based on current character count
-	newRow := make([]CharacterState, c.Dimensions)
-	for i := 0; i < c.Dimensions; i++ {
+	newRow := make([]CharacterState, m.parent.Dimensions)
+	for i := 0; i < m.parent.Dimensions; i++ {
 		newRow[i] = CharacterState{
 			Index: i + 1,
-			Type:  StateSingle,
-			Value: []string{InternalMissing},
+			Type:  StateMissing,
 		}
 	}
-	c.data = append(c.data, newRow)
+	m.data = append(m.data, newRow)
 
 	return taxon
 }
 
-// ResolveStateSymbol takes a user input (which could be a label or a direct symbol) and returns the correct internal symbol for storage.
-func (c *CharactersBlock) ResolveStateSymbol(char *Character, state string) string {
-	// Check if it's one of our internal sentinels
-	if state == InternalMissing || state == InternalGap {
-		return state
+// GetTaxon retrieves a Taxon by its name (case-insensitive).
+func (m *Matrix) GetTaxon(name string) *Taxon {
+	normalizedName := normalizeTaxonName(name)
+	for _, t := range m.Taxa {
+		if normalizeTaxonName(t.Name) == normalizedName {
+			return t
+		}
 	}
+	return nil
+}
 
-	// Search the character's defined StateLabels
+// GetCharacter retrieves a Character by its 1-based Index.
+func (m *Matrix) GetCharacterByIndex(index int) *Character {
+	if index > 0 && index <= len(m.Characters) {
+		return m.Characters[index-1]
+	}
+	return nil
+}
+
+// GetState returns the current CharacterState for this taxon at the given character.
+func (t *Taxon) GetState(char *Character) CharacterState {
+	return t.matrix.GetState(t, char)
+}
+
+// ResolveStateSymbol translates labels to their symbol equivalent if needed.
+func (m *Matrix) ResolveStateSymbol(char *Character, state string) string {
 	for i, label := range char.StateLabels {
 		if strings.EqualFold(label, state) {
-			if i < len(c.Format.Symbols) {
-				return c.Format.Symbols[i]
+			if i < len(m.parent.Format.Symbols) {
+				return m.parent.Format.Symbols[i]
 			}
-			// Fallback if symbols aren't explicitly defined
 			return strconv.Itoa(i)
 		}
 	}
-
-	// If no label matched, assume the user passed a raw symbol directly (e.g., "A", "0")
 	return state
-}
-
-// SetState safely registers character states for a taxon, translating labels to symbols.
-// It accepts multiple states to support Polymorphism (e.g., passing "blue", "green").
-func (t *TaxonReference) SetState(char *Character, states ...string) error {
-	var resolved []string
-
-	// Translate every provided state string into its proper matrix symbol
-	for _, state := range states {
-		resolved = append(resolved, t.parent.ResolveStateSymbol(char, state))
-	}
-
-	stateType := StateSingle
-	if len(resolved) > 1 {
-		stateType = StatePolymorphic
-	}
-
-	// Update the matrix grid
-	t.parent.data[t.Index][char.Index-1] = CharacterState{
-		Index: char.Index,
-		Type:  stateType,
-		Value: resolved,
-	}
-	return nil
 }

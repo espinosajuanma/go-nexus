@@ -89,6 +89,7 @@ func (c *CharactersBlock) parseTitle(s *scanner.Scanner) error {
 	return nil
 }
 
+// parseDimensions reads the DIMENSIONS command to determine the number of characters and optionally taxa.
 func (c *CharactersBlock) parseDimensions(s *scanner.Scanner) error {
 	tokens, err := parser.ReadUntilSemicolon(s)
 	if err != nil {
@@ -115,9 +116,8 @@ func (c *CharactersBlock) parseDimensions(s *scanner.Scanner) error {
 					return fmt.Errorf("invalid NCHAR value: must be a positive integer")
 				}
 				c.Dimensions = count
-				// Pre-populate Character objects with indices
 				for j := 1; j <= count; j++ {
-					c.Characters = append(c.Characters, &Character{Index: j})
+					c.Matrix.Characters = append(c.Matrix.Characters, &Character{Index: j})
 				}
 			} else if key == "NTAX" {
 				count, err := strconv.Atoi(tokens[valIdx])
@@ -126,8 +126,8 @@ func (c *CharactersBlock) parseDimensions(s *scanner.Scanner) error {
 				}
 				// If NTAX is provided, we can pre-allocate the taxa slice if desired
 				// or just use it for validation later.
-				if len(c.Taxa) == 0 {
-					c.Taxa = make([]*TaxonReference, 0, count)
+				if len(c.Matrix.Taxa) == 0 {
+					c.Matrix.Taxa = make([]*Taxon, 0, count)
 				}
 			}
 		}
@@ -135,6 +135,7 @@ func (c *CharactersBlock) parseDimensions(s *scanner.Scanner) error {
 	return nil
 }
 
+// parseFormat reads the FORMAT command and sets parsing rules accordingly.
 func (c *CharactersBlock) parseFormat(s *scanner.Scanner) error {
 	tokens, err := parser.ReadUntilSemicolon(s)
 	if err != nil {
@@ -241,6 +242,7 @@ func (c *CharactersBlock) parseFormat(s *scanner.Scanner) error {
 	return nil
 }
 
+// parseCharStateLabels assigns names to specific character states by character ID.
 func (c *CharactersBlock) parseCharStateLabels(s *scanner.Scanner) error {
 	tokens, err := parser.ReadUntilSemicolon(s)
 	if err != nil {
@@ -271,8 +273,8 @@ func (c *CharactersBlock) parseCharStateLabels(s *scanner.Scanner) error {
 		}
 
 		// Apply names and states to the specific Character object
-		if currentID != 0 && currentID <= len(c.Characters) {
-			char := c.Characters[currentID-1]
+		if currentID != 0 && currentID <= len(c.Matrix.Characters) {
+			char := c.Matrix.Characters[currentID-1]
 
 			if !readingStates {
 				char.Name = core.DecodeName(t)
@@ -288,10 +290,12 @@ func (c *CharactersBlock) parseCharStateLabels(s *scanner.Scanner) error {
 	return nil
 }
 
+// parseMatrix reads the MATRIX command and fills the data matrix.
 func (c *CharactersBlock) parseMatrix(s *scanner.Scanner) error {
 	nchar := c.Dimensions
-	progress := make(map[string]int) // Tracks char index per normalized taxon name
-	var firstTaxonName string        // Tracks the normalized name of the first taxon for MATCHCHAR
+
+	// Track how many character states we've read for each taxon to know when we're done with that row.
+	progress := make(map[int]int)
 
 	for {
 		token, err := s.NextToken()
@@ -302,73 +306,57 @@ func (c *CharactersBlock) parseMatrix(s *scanner.Scanner) error {
 			break
 		}
 
-		// Resolve Taxon Name (Normalized for logic, Raw for UI)
-		normalizedName := normalizeTaxonName(token)
-		var taxonRef *TaxonReference
-
-		// Check for existing taxon (Case-insensitive Interleave support)
-		exists := false
-		for _, t := range c.Taxa {
-			if normalizeTaxonName(t.Name) == normalizedName {
-				taxonRef = t
-				exists = true
-				break
-			}
+		taxon := c.Matrix.GetTaxon(token)
+		if taxon == nil {
+			taxon = c.AddTaxon(token)
 		}
 
-		// Register new taxon if not seen before
-		if !exists {
-			// Pass the raw token to AddTaxon so the original case is preserved for rendering
-			taxonRef = c.AddTaxon(token)
-		}
-		if firstTaxonName == "" {
-			firstTaxonName = normalizedName
-		}
-
-		// Parse Characters for this segment
-		for progress[normalizedName] < nchar {
+		for progress[taxon.Index] < nchar {
 			stateTok, err := s.NextToken()
 			if err != nil {
 				return err
 			}
 
-			// If we hit a semicolon prematurely
 			if stateTok == ";" {
-				return fmt.Errorf("unexpected ';' in matrix for taxon %s", taxonRef.Name)
+				return fmt.Errorf("unexpected ';' in matrix for taxon %s", taxon.Name)
 			}
 
-			// Decompose the token based on FORMAT (TOKENS vs Smushed)
 			states, err := c.decomposeStateToken(stateTok, s)
 			if err != nil {
 				return err
 			}
 
 			for _, cs := range states {
-				currIdx := progress[normalizedName]
+				currIdx := progress[taxon.Index]
 				if currIdx >= nchar {
 					break
 				}
 
-				// Handle MATCHCHAR logic safely using the first taxon
-				if len(cs.Value) == 1 && cs.Value[0] == c.Format.MatchChar && normalizedName != firstTaxonName {
-					// Copy state from the corresponding position in the first taxon
-					cs = c.data[0][currIdx]
+				// --- MATCHCHAR LOGIC ---
+				if len(cs.Observations) == 1 && cs.Observations[0].Symbol == c.Format.MatchChar {
+					if taxon.Index > 0 {
+						// Deep copy state from taxon 0 at the exact same column
+						firstTaxonState := c.Matrix.GetStateByIndex(0, currIdx)
+						cs.Type = firstTaxonState.Type
+						// Safely copy the slice so mutations don't bleed across rows
+						cs.Observations = append([]StateObservation(nil), firstTaxonState.Observations...)
+						cs.Observations = c.applyEquates(cs.Observations)
+					}
 				} else {
-					// Map literal symbols to internal sentinels
-					cs.Value = c.resolveSpecialSymbols(cs.Value)
-					// Apply EQUATE macros
-					cs.Value = c.applyEquates(cs.Value)
+					// Apply equates to newly parsed observations
+					cs.Observations = c.applyEquates(cs.Observations)
 				}
 
-				c.data[taxonRef.Index][currIdx] = cs
-				progress[normalizedName]++
+				c.Matrix.SetStateByIndex(taxon.Index, currIdx, cs)
+				progress[taxon.Index]++
 			}
 
-			// If INTERLEAVE is true, we stop after one line/segment.
-			// Heuristic: if the next token is a known taxon, we break this segment's loop.
 			if c.Format.Interleave {
 				peek, _ := s.PeekToken()
-				if c.isKnownTaxon(peek) || peek == ";" {
+				// Break if the states are smushed (1 token = 1 chunk),
+				// OR if the next token is a taxon we recognize,
+				// OR if we hit the end of the block.
+				if !c.Format.Tokens || c.Matrix.GetTaxon(peek) != nil || peek == ";" {
 					break
 				}
 			}
@@ -377,29 +365,77 @@ func (c *CharactersBlock) parseMatrix(s *scanner.Scanner) error {
 	return nil
 }
 
-// isKnownTaxon checks if a token matches a taxon name already registered in this block.
-func (c *CharactersBlock) isKnownTaxon(name string) bool {
-	normalized := normalizeTaxonName(name)
-	for _, t := range c.Taxa {
-		if normalizeTaxonName(t.Name) == normalized {
-			return true
+// parseObservation checks for the ":" separator used in COUNT and FREQUENCY formats.
+func parseObservation(token string) StateObservation {
+	parts := strings.SplitN(token, ":", 2)
+	obs := StateObservation{Symbol: parts[0], Weight: 1.0}
+
+	if len(parts) == 2 {
+		if weight, err := strconv.ParseFloat(parts[1], 64); err == nil {
+			obs.Weight = weight
 		}
 	}
-	return false
+	return obs
 }
 
-// decomposeStateToken breaks a token into CharacterState objects based on FORMAT rules.
-func (c *CharactersBlock) decomposeStateToken(tok string, s *scanner.Scanner) ([]CharacterState, error) {
-	// Handle bracketed groups: (polymorphic) or {uncertain}
-	if tok == "(" || tok == "{" {
-		stateType := StatePolymorphic
+// expandRange takes a token like "0~3" and returns the intermediate states
+// based on the defined Format.Symbols list.
+func (c *CharactersBlock) expandRange(token string) ([]StateObservation, error) {
+	if !strings.Contains(token, "~") {
+		return []StateObservation{parseObservation(token)}, nil
+	}
+
+	parts := strings.Split(token, "~")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid range format: %s", token)
+	}
+
+	startSym, endSym := parseObservation(parts[0]), parseObservation(parts[1])
+
+	startIndex, endIndex := -1, -1
+	for i, sym := range c.Format.Symbols {
+		if sym == startSym.Symbol {
+			startIndex = i
+		}
+		if sym == endSym.Symbol {
+			endIndex = i
+		}
+	}
+
+	if startIndex == -1 || endIndex == -1 || startIndex > endIndex {
+		return nil, fmt.Errorf("invalid or out-of-order range symbols: %s", token)
+	}
+
+	var expanded []StateObservation
+	for i := startIndex; i <= endIndex; i++ {
+		// Assigning the start weight to all expanded items (or default 1.0)
+		expanded = append(expanded, StateObservation{
+			Symbol: c.Format.Symbols[i],
+			Weight: startSym.Weight,
+		})
+	}
+	return expanded, nil
+}
+
+// isKnownTaxon checks if a token matches a taxon name already registered in this block.
+func (c *CharactersBlock) isKnownTaxon(name string) bool {
+	return c.Matrix.GetTaxon(name) != nil
+}
+
+// decomposeStateToken breaks a matrix token into one or more robust CharacterState objects.
+// It returns a slice because a single token (e.g., "ATGC") may represent multiple character columns if TOKENS is false.
+func (c *CharactersBlock) decomposeStateToken(token string, s *scanner.Scanner) ([]CharacterState, error) {
+	var states []CharacterState
+
+	// Handle Polymorphic () or Uncertain {} blocks
+	if token == "(" || token == "{" {
+		state := CharacterState{Type: StatePolymorphic}
 		closing := ")"
-		if tok == "{" {
-			stateType = StateUncertain
+		if token == "{" {
+			state.Type = StateUncertain
 			closing = "}"
 		}
 
-		var subValues []string
 		for {
 			inner, err := s.NextToken()
 			if err != nil {
@@ -408,24 +444,67 @@ func (c *CharactersBlock) decomposeStateToken(tok string, s *scanner.Scanner) ([
 			if inner == closing {
 				break
 			}
-			subValues = append(subValues, inner)
+
+			// Smushed strings inside parenthesis (e.g., "(AC)")
+			if !c.Format.Tokens && !strings.Contains(inner, "~") && len(inner) > 1 {
+				for _, ch := range inner {
+					state.Observations = append(state.Observations, parseObservation(string(ch)))
+				}
+			} else {
+				// Expand ranges (e.g., "0~3") and append to observations
+				obs, err := c.expandRange(inner)
+				if err != nil {
+					return nil, err
+				}
+				state.Observations = append(state.Observations, obs...)
+			}
 		}
-		return []CharacterState{{Type: stateType, Value: subValues}}, nil
+		// A polymorphic/uncertain block always applies to a SINGLE character column
+		return []CharacterState{state}, nil
 	}
 
-	// Handle standard tokens: if FORMAT TOKENS is set, the whole word is ONE state.
+	// Handle literal Missing or Gap symbols (if spaced out)
+	if token == c.Format.Missing {
+		return []CharacterState{{Type: StateMissing}}, nil
+	}
+	if token == c.Format.Gap {
+		return []CharacterState{{Type: StateGap}}, nil
+	}
+
+	// Handle Single States (Tokens vs Smushed)
 	if c.Format.Tokens {
-		return []CharacterState{{Type: StateSingle, Value: []string{tok}}}, nil
+		// If TOKENS is set, the whole word belongs to ONE character column (e.g., "absent")
+		state := CharacterState{
+			Type:         StateSingle,
+			Observations: []StateObservation{parseObservation(token)},
+		}
+		return []CharacterState{state}, nil
 	}
 
-	// Handle smushed sequences: "ATGC" -> A, T, G, C
-	var states []CharacterState
-	for _, char := range tok {
-		states = append(states, CharacterState{
-			Type:  StateSingle,
-			Value: []string{string(char)},
-		})
+	// Handle Smushed Sequences (e.g., "ATGC" -> A, T, G, C)
+	// If TOKENS is false, we must break the token character-by-character.
+	for _, ch := range token {
+		charStr := string(ch)
+
+		switch charStr {
+		case c.Format.Missing:
+			states = append(states, CharacterState{Type: StateMissing})
+		case c.Format.Gap:
+			states = append(states, CharacterState{Type: StateGap})
+		case c.Format.MatchChar:
+			// Catch match characters inside smushed sequences (e.g., "A..C")
+			states = append(states, CharacterState{
+				Type:         StateSingle,
+				Observations: []StateObservation{{Symbol: charStr, Weight: 1.0}},
+			})
+		default:
+			states = append(states, CharacterState{
+				Type:         StateSingle,
+				Observations: []StateObservation{parseObservation(charStr)},
+			})
+		}
 	}
+
 	return states, nil
 }
 
@@ -445,16 +524,21 @@ func (c *CharactersBlock) resolveSpecialSymbols(vals []string) []string {
 	return resolved
 }
 
-// applyEquates resolves custom EQUATE mappings (e.g., "R" -> "A G").
-func (c *CharactersBlock) applyEquates(vals []string) []string {
-	var final []string
-	for _, v := range vals {
-		if mapping, ok := c.Format.Equate[v]; ok {
-			// EQUATE values can be multi-state like "(A G)"
+// applyEquates maps a symbol to its expanded values (e.g. "R" -> "A" and "G")
+func (c *CharactersBlock) applyEquates(obs []StateObservation) []StateObservation {
+	var final []StateObservation
+	for _, o := range obs {
+		if mapping, ok := c.Format.Equate[o.Symbol]; ok {
 			clean := strings.Trim(mapping, "() ")
-			final = append(final, strings.Fields(clean)...)
+			fields := strings.FieldsSeq(clean)
+			for f := range fields {
+				final = append(final, StateObservation{
+					Symbol: f,
+					Weight: o.Weight, // Preserve weight across the expanded states
+				})
+			}
 		} else {
-			final = append(final, v)
+			final = append(final, o)
 		}
 	}
 	return final
@@ -473,8 +557,8 @@ func (c *CharactersBlock) parseCharLabels(s *scanner.Scanner) error {
 		if t == "," {
 			continue // Commas are optional separators
 		}
-		if charIndex < len(c.Characters) {
-			c.Characters[charIndex].Name = core.DecodeName(t)
+		if charIndex < len(c.Matrix.Characters) {
+			c.Matrix.Characters[charIndex].Name = core.DecodeName(t)
 			charIndex++
 		}
 	}
@@ -506,12 +590,12 @@ func (c *CharactersBlock) parseStateLabels(s *scanner.Scanner) error {
 		}
 
 		// Otherwise, it's a state label for the current character ID
-		if currentID <= len(c.Characters) {
+		if currentID <= len(c.Matrix.Characters) {
 			stateName := core.DecodeName(t)
 			if stateName == "_" {
 				stateName = ""
 			}
-			c.Characters[currentID-1].StateLabels = append(c.Characters[currentID-1].StateLabels, stateName)
+			c.Matrix.Characters[currentID-1].StateLabels = append(c.Matrix.Characters[currentID-1].StateLabels, stateName)
 		}
 	}
 	return nil

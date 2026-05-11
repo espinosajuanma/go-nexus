@@ -33,16 +33,16 @@ func main() {
 	}
 
 	// Add characters to the block
-	eyeColor := cb.AddCharacter("eye color", "light red", "blue", "green")
-	tailLength := cb.AddCharacter("tail length", "short", "long")
-	unnamedChar := cb.AddCharacter("", "absent", "present")
+	eyeColor := cb.Matrix.AddCharacter("eye color", "light red", "blue", "green")
+	tailLength := cb.Matrix.AddCharacter("tail length", "short", "long")
+	unnamedChar := cb.Matrix.AddCharacter("", "absent", "present")
 
 	charsList := []*characters.Character{eyeColor, tailLength, unnamedChar}
 
 	for _, char := range charsList {
-		for _, taxon := range cb.Taxa {
-			randState := char.StateLabels[rand.Intn(len(char.StateLabels))]
-			taxon.SetState(char, randState)
+		for _, taxon := range cb.Matrix.Taxa {
+			randState := []string{"0", "1"}[rand.Intn(2)] // Randomly select 0 or 1
+			taxon.SetState(char, characters.StateSingle, randState)
 		}
 	}
 

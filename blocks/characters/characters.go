@@ -7,37 +7,36 @@ import (
 // init automatically registers the CHARACTERS block with the core parser.
 func init() {
 	core.RegisterBlock("CHARACTERS", func(name string) core.Block {
-		return &CharactersBlock{
+		cb := &CharactersBlock{
 			Format: Format{
-				Missing:     "?",
-				Gap:         "-",
-				DataType:    Standard,
-				Labels:      true,
-				Symbols:     DefaultSymbols[Standard],
-				MatchChar:   ".",
-				RespectCase: false,
+				Missing:        "?",
+				Gap:            "-",
+				DataType:       Standard,
+				Labels:         true,
+				Symbols:        DefaultSymbols[Standard],
+				MatchChar:      ".",
+				RespectCase:    false,
+				InterleaveSize: 70,
 			},
-			Name: name,
+			Matrix: Matrix{},
+			Name:   name,
 		}
+
+		cb.Matrix.parent = cb
+
+		return cb
 	})
 }
 
 // CharactersBlock defines characters and includes character data.
 type CharactersBlock struct {
-	nexus           *core.Nexus
-	Name            string
-	Title           string
-	Dimensions      int
-	Format          Format
-	CharStateLabels map[int]string // to be deprecated
-	Matrix          []MatrixRow    // to be deprecated
-
-	Characters []*Character
-	Taxa       []*TaxonReference
-
-	data [][]CharacterState
-
-	Eliminate map[int]bool
+	nexus      *core.Nexus
+	Name       string
+	Title      string
+	Dimensions int
+	Format     Format
+	Matrix     Matrix
+	Eliminate  map[int]bool
 }
 
 // New creates, appends, and returns a new CHARACTERS block.
@@ -46,13 +45,16 @@ func New(n *core.Nexus, dt DataType) *CharactersBlock {
 		nexus: n,
 		Name:  "CHARACTERS",
 		Format: Format{
-			DataType: dt,
-			Missing:  "?",
-			Gap:      "-",
-			Labels:   true,
+			DataType:       dt,
+			Missing:        "?",
+			Gap:            "-",
+			Labels:         true,
+			InterleaveSize: 70,
 		},
-		CharStateLabels: make(map[int]string),
+		Matrix: Matrix{},
 	}
+	cb.Matrix.parent = cb
+
 	n.Blocks = append(n.Blocks, cb)
 	return cb
 }
@@ -65,4 +67,8 @@ func (c *CharactersBlock) SetNexus(n *core.Nexus) {
 // SetTitle applies a title to the block.
 func (c *CharactersBlock) SetTitle(title string) {
 	c.Title = title
+}
+
+func (c *CharactersBlock) AddTaxon(name string) *Taxon {
+	return c.Matrix.AddTaxon(name)
 }

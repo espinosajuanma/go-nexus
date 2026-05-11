@@ -3,20 +3,17 @@ BEGIN CHARACTERS;
 	TITLE {{.Title | quote}};
 {{- end}}
 	DIMENSIONS NCHAR={{.Dimensions}};
-
 {{- /* Print the FORMAT command dynamically */}}
-{{- $formatCmd := printFormat .Format}}
+{{- $formatCmd := .Format.String}}
 {{- if $formatCmd}}
 {{$formatCmd}}
 {{- end}}
 
 {{- /* Print CHARSTATELABELS if there are names defined */}}
-{{- $hasLabels := false}}
-{{- range .Characters}}{{if .Name}}{{$hasLabels = true}}{{end}}{{end}}
-{{- if $hasLabels}}
+{{- if .HasCharStateLabels}}
 	CHARSTATELABELS
 {{- $first := true}}
-{{- range .Characters}}
+{{- range .Matrix.Characters}}
 	{{- if or .Name .StateLabels}}
 		{{- if not $first}},{{end}}{{$first = false}}
 		{{.Index}} {{if .Name}}{{.Name | quote}}{{end}} {{if .StateLabels}}/ {{range .StateLabels}}{{. | quote}} {{end}}{{end}}
@@ -28,26 +25,27 @@ BEGIN CHARACTERS;
 {{- /* MATRIX RENDERING LOGIC */}}
 {{- $format := .Format}}
 {{- $maxLen := .MaxTaxonNameLength}}
+{{- $firstTaxon := index .Matrix.Taxa 0}}
 {{- if not .Format.Interleave}}
 {{- /* STANDARD MATRIX: One row per taxon */}}
-{{- range $rowIndex, $taxon := .Taxa}}
+{{- range $rowIndex, $taxon := .Matrix.Taxa}}
 	{{if $format.Labels}}{{ $taxon.Name | snake | quote | pad $maxLen }}{{end}}
-	{{- range $colIndex, $state := (index $.Data $taxon.Index)}}
-		{{- if $format.Tokens}} {{end}}{{formatState $state $format}}
+	{{- range $char := $.Matrix.Characters}}
+		{{- $state := $taxon.GetState $char}}
+		{{- $firstState := $firstTaxon.GetState $char}}
+		{{- if $format.Tokens}} {{end}}{{if and (ne $rowIndex 0) (ne $format.MatchChar "") (eq ($state.String $format) ($firstState.String $format))}}{{ $format.MatchChar }}{{else}}{{ $state.String $format }}{{end}}
 	{{- end}}
 {{- end}}
 {{- else}}
 {{- /* INTERLEAVED MATRIX: Blocks of 70 characters */}}
-{{- $nchar := .Dimensions}}
-{{- $chunkSize := 70}}
-{{- $chunks := (call $.CalculateChunks $nchar $chunkSize) }}
-{{- range $cIdx, $startCol := $chunks}}
-	{{- $endCol := (call $.CalculateEndCol $startCol $chunkSize $nchar)}}
+{{- range $cIdx, $chunk := ($.InterleavedChunks .Format.InterleaveSize)}}
 	{{- if gt $cIdx 0}}{{"\n"}}{{end}}
-	{{- range $rowIndex, $taxon := $.Taxa}}
+	{{- range $rowIndex, $taxon := $.Matrix.Taxa}}
 	{{if $format.Labels}}{{ $taxon.Name | snake | quote | pad $maxLen }}{{end}}
-		{{- range $colIndex, $state := (slice (index $.Data $taxon.Index) $startCol $endCol)}}
-			{{- if $format.Tokens}} {{end}}{{formatState $state $format}}
+		{{- range $char := (slice $.Matrix.Characters $chunk.Start $chunk.End)}}
+			{{- $state := $taxon.GetState $char}}
+			{{- $firstState := $firstTaxon.GetState $char}}
+			{{- if $format.Tokens}} {{end}}{{if and (ne $rowIndex 0) (ne $format.MatchChar "") (eq ($state.String $format) ($firstState.String $format))}}{{ $format.MatchChar }}{{else}}{{ $state.String $format }}{{end}}
 		{{- end}}
 	{{- end}}
 {{- end}}

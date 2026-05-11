@@ -58,8 +58,8 @@ END;`
 	if chars.Format.Gap != "-" {
 		t.Errorf("Expected GAP=-, got %s", chars.Format.Gap)
 	}
-	if len(chars.Taxa) != 2 {
-		t.Errorf("Expected 2 matrix rows (taxa), got %d", len(chars.Taxa))
+	if len(chars.Matrix.Taxa) != 2 {
+		t.Errorf("Expected 2 matrix rows (taxa), got %d", len(chars.Matrix.Taxa))
 	}
 }
 
