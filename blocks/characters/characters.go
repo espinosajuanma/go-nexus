@@ -14,7 +14,6 @@ func init() {
 				DataType:       Standard,
 				Labels:         true,
 				Symbols:        DefaultSymbols[Standard],
-				MatchChar:      ".",
 				RespectCase:    false,
 				InterleaveSize: 70,
 			},

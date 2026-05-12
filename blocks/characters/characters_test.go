@@ -147,3 +147,91 @@ func TestParseEquatesAndPolymorphic(t *testing.T) {
 		t.Errorf("Expected Polymorphic '(AC)' to expand to [A, C], got %v", state2.Values)
 	}
 }
+
+// TestMatchCharDefaultsAndRendering verifies that MatchChar is disabled by default,
+// but correctly applied during rendering when set.
+func TestMatchCharDefaultsAndRendering(t *testing.T) {
+	// Verify Default Behavior (Disabled)
+	cb := characters.New(&core.Nexus{}, characters.DNA)
+	if cb.Format.MatchChar != "" {
+		t.Errorf("Expected MatchChar to be empty by default, got '%s'", cb.Format.MatchChar)
+	}
+
+	t1 := cb.AddTaxon("taxon1")
+	t2 := cb.AddTaxon("taxon2")
+	char1 := cb.Matrix.AddCharacter("char1")
+
+	// Set identical states
+	t1.SetState(char1, characters.StateSingle, "A")
+	t2.SetState(char1, characters.StateSingle, "A")
+
+	rendered, err := cb.Render()
+	if err != nil {
+		t.Fatalf("Failed to render: %v", err)
+	}
+
+	if strings.Contains(rendered, "MATCHCHAR") {
+		t.Error("Rendered output should not contain MATCHCHAR command by default")
+	}
+
+	// Taxon 2 should show literal "A", not a match character.
+	// We check for "taxon2" followed by the state without strictly requiring quotes.
+	if !strings.Contains(rendered, "taxon2") || !strings.Contains(rendered, "A") {
+		t.Errorf("Expected literal 'A' for taxon2 in default render, got:\n%s", rendered)
+	}
+
+	// Verify Enabled Behavior
+	cb.Format.MatchChar = "."
+	renderedDot, _ := cb.Render()
+
+	if !strings.Contains(renderedDot, "MATCHCHAR=.") {
+		t.Error("Rendered output should include MATCHCHAR=. when set")
+	}
+
+	// Taxon 2 should now show the match character "."
+	if !strings.Contains(renderedDot, "taxon2") || !strings.Contains(renderedDot, ".") {
+		t.Errorf("Expected match character '.' for taxon2, got:\n%s", renderedDot)
+	}
+}
+
+// TestParseAndRenderMatchChar ensures that a parsed MatchChar is preserved
+// and correctly used when re-rendering the block.
+func TestParseAndRenderMatchChar(t *testing.T) {
+	nexusData := `#NEXUS
+	BEGIN CHARACTERS;
+		DIMENSIONS NCHAR=3;
+		FORMAT DATATYPE=DNA MATCHCHAR=.;
+		MATRIX
+		  taxon1  AAA
+		  taxon2  ...
+		;
+	END;`
+
+	nex, err := nexus.Parse(strings.NewReader(nexusData))
+	if err != nil {
+		t.Fatalf("Failed to parse: %v", err)
+	}
+
+	cb, _ := core.GetBlock[*characters.CharactersBlock](nex)
+
+	// Verify parsed state
+	if cb.Format.MatchChar != "." {
+		t.Errorf("Expected parsed MatchChar to be '.', got '%s'", cb.Format.MatchChar)
+	}
+
+	// Ensure the internal matrix data was correctly expanded during parsing
+	t2 := cb.Matrix.GetTaxon("taxon2")
+	state := t2.GetState(cb.Matrix.GetCharacterByIndex(1))
+	if state.Values[0].Symbol != "A" {
+		t.Errorf("Internal state should be expanded to 'A', got '%s'", state.Values[0].Symbol)
+	}
+
+	// Verify Round-trip Rendering
+	rendered, _ := cb.Render()
+	if !strings.Contains(rendered, "MATCHCHAR=.") {
+		t.Error("MatchChar should be preserved in rendered output")
+	}
+	if !strings.Contains(rendered, "taxon2") || !strings.Contains(rendered, "...") {
+		t.Errorf("Expected match chars in matrix output, got:\n%s", rendered)
+	}
+}
