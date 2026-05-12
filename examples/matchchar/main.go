@@ -25,7 +25,7 @@ func main() {
 		// Chimp's first character is '.', which should have been copied from 'human' (which is '1')
 		state := chimp.GetState(char1)
 
-		if len(state.Observations) > 0 && state.Observations[0].Symbol == "1" {
+		if len(state.Values) > 0 && state.Values[0].Symbol == "1" {
 			fmt.Println("Success: Matchchar '.' was successfully resolved to '1' from the first taxon.")
 		} else {
 			fmt.Println("Failed: Matchchar was not resolved correctly.")

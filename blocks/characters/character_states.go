@@ -18,14 +18,14 @@ const (
 
 // CharacterState holds individualized information about a single character state.
 type CharacterState struct {
-	Index        int
-	Type         StateType
-	Observations []StateObservation
+	Index  int
+	Type   StateType
+	Values []StateValue
 }
 
-// StateObservation holds a parsed state symbol and its associated value
+// StateValue holds a parsed state symbol and its associated value
 // Handles STATESFORMAT=COUNT (e.g., "A:2") or FREQUENCY (e.g., "B:0.40").
-type StateObservation struct {
+type StateValue struct {
 	Symbol string
 	Weight float64 // Defaults to 1.0. Holds count or frequency if provided.
 }
@@ -41,11 +41,11 @@ func (cs CharacterState) String(format Format) string {
 	}
 
 	var resolved []string
-	for _, obs := range cs.Observations {
-		str := obs.Symbol
+	for _, val := range cs.Values {
+		str := val.Symbol
 		// If dealing with frequencies/counts, format them back
-		if obs.Weight != 1.0 && obs.Weight != 0.0 {
-			str = fmt.Sprintf("%s:%v", obs.Symbol, obs.Weight)
+		if val.Weight != 1.0 && val.Weight != 0.0 {
+			str = fmt.Sprintf("%s:%v", val.Symbol, val.Weight)
 		}
 		resolved = append(resolved, str)
 	}

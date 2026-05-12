@@ -35,10 +35,10 @@ func main() {
 		newState := bat.GetState(char2)
 		fmt.Printf("New State Type: %s\n", newState.Type) // Should print POLYMORPHIC
 
-		// Let's print the internal observations to verify
-		fmt.Print("Internal Observations: ")
-		for _, obs := range newState.Observations {
-			fmt.Printf("%s ", obs.Symbol)
+		// Let's print the internal value to verify
+		fmt.Print("Internal Values: ")
+		for _, val := range newState.Values {
+			fmt.Printf("%s ", val.Symbol)
 		}
 		fmt.Println()
 

@@ -55,14 +55,14 @@ func TestParseInterleavedMatrix(t *testing.T) {
 
 	// Verify the first character of chunk 1
 	state1 := t1.GetState(charBlock.Matrix.GetCharacterByIndex(1))
-	if state1.Observations[0].Symbol != "A" {
-		t.Errorf("Expected taxon1 char 1 to be 'A', got %v", state1.Observations[0].Symbol)
+	if state1.Values[0].Symbol != "A" {
+		t.Errorf("Expected taxon1 char 1 to be 'A', got %v", state1.Values[0].Symbol)
 	}
 
 	// Verify the first character of chunk 2
 	state6 := t1.GetState(charBlock.Matrix.GetCharacterByIndex(6))
-	if state6.Observations[0].Symbol != "T" {
-		t.Errorf("Expected taxon1 char 6 to be 'T', got %v", state6.Observations[0].Symbol)
+	if state6.Values[0].Symbol != "T" {
+		t.Errorf("Expected taxon1 char 6 to be 'T', got %v", state6.Values[0].Symbol)
 	}
 }
 
@@ -93,19 +93,19 @@ func TestParseMatchChar(t *testing.T) {
 
 	// Char 2 (index 2) was a matchchar '.', should copy taxon1's 'C'
 	state2 := t2.GetState(charBlock.Matrix.GetCharacterByIndex(2))
-	if state2.Observations[0].Symbol != "C" {
-		t.Errorf("Expected taxon2 char 2 to copy 'C', got %v", state2.Observations[0].Symbol)
+	if state2.Values[0].Symbol != "C" {
+		t.Errorf("Expected taxon2 char 2 to copy 'C', got %v", state2.Values[0].Symbol)
 	}
 
 	// Char 3 (index 3) was a matchchar '.', should copy taxon1's 'G'
 	state3 := t2.GetState(charBlock.Matrix.GetCharacterByIndex(3))
-	if state3.Observations[0].Symbol != "G" {
-		t.Errorf("Expected taxon2 char 3 to copy 'G', got %v", state3.Observations[0].Symbol)
+	if state3.Values[0].Symbol != "G" {
+		t.Errorf("Expected taxon2 char 3 to copy 'G', got %v", state3.Values[0].Symbol)
 	}
 }
 
 // TestParseEquatesAndPolymorphic ensures that ambiguous codes (like 'R')
-// and explicit polymorphic blocks '(AC)' expand accurately to multiple observations.
+// and explicit polymorphic blocks '(AC)' expand accurately to multiple values.
 func TestParseEquatesAndPolymorphic(t *testing.T) {
 	nexusData := `#NEXUS
 	BEGIN CHARACTERS;
@@ -113,6 +113,7 @@ func TestParseEquatesAndPolymorphic(t *testing.T) {
 		FORMAT DATATYPE=DNA;
 		MATRIX
 		  taxon1  R(AC)T
+		  taxon2  (AG)MT
 		;
 	END;`
 
@@ -127,11 +128,14 @@ func TestParseEquatesAndPolymorphic(t *testing.T) {
 	}
 
 	t1 := charBlock.Matrix.GetTaxon("taxon1")
-
+	t2 := charBlock.Matrix.GetTaxon("taxon2")
+	if t1 == nil || t2 == nil {
+		t.Fatal("taxon1 or taxon2 not found")
+	}
 	// Char 1: 'R' should equate to A and G (based on DefaultEquates in symbols.go)
 	state1 := t1.GetState(charBlock.Matrix.GetCharacterByIndex(1))
-	if len(state1.Observations) != 2 || state1.Observations[0].Symbol != "A" || state1.Observations[1].Symbol != "G" {
-		t.Errorf("Expected Equate 'R' to expand to [A, G], got %v", state1.Observations)
+	if len(state1.Values) != 2 || state1.Values[0].Symbol != "A" || state1.Values[1].Symbol != "G" {
+		t.Errorf("Expected Equate 'R' to expand to [A, G], got %v", state1.Values)
 	}
 
 	// Char 2: '(AC)' should be parsed as StatePolymorphic
@@ -139,7 +143,7 @@ func TestParseEquatesAndPolymorphic(t *testing.T) {
 	if state2.Type != characters.StatePolymorphic {
 		t.Errorf("Expected state to be StatePolymorphic, got %v", state2.Type)
 	}
-	if len(state2.Observations) != 2 || state2.Observations[0].Symbol != "A" || state2.Observations[1].Symbol != "C" {
-		t.Errorf("Expected Polymorphic '(AC)' to expand to [A, C], got %v", state2.Observations)
+	if len(state2.Values) != 2 || state2.Values[0].Symbol != "A" || state2.Values[1].Symbol != "C" {
+		t.Errorf("Expected Polymorphic '(AC)' to expand to [A, C], got %v", state2.Values)
 	}
 }

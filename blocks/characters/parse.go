@@ -333,18 +333,18 @@ func (c *CharactersBlock) parseMatrix(s *scanner.Scanner) error {
 				}
 
 				// --- MATCHCHAR LOGIC ---
-				if len(cs.Observations) == 1 && cs.Observations[0].Symbol == c.Format.MatchChar {
+				if len(cs.Values) == 1 && cs.Values[0].Symbol == c.Format.MatchChar {
 					if taxon.Index > 0 {
 						// Deep copy state from taxon 0 at the exact same column
 						firstTaxonState := c.Matrix.GetStateByIndex(0, currIdx)
 						cs.Type = firstTaxonState.Type
 						// Safely copy the slice so mutations don't bleed across rows
-						cs.Observations = append([]StateObservation(nil), firstTaxonState.Observations...)
-						cs.Observations = c.applyEquates(cs.Observations)
+						cs.Values = append([]StateValue(nil), firstTaxonState.Values...)
+						cs.Values = c.applyEquates(cs.Values) // Apply equates to the copied state as well, in case the first taxon had an equate symbol. This ensures matchchar also respects equates.
 					}
 				} else {
-					// Apply equates to newly parsed observations
-					cs.Observations = c.applyEquates(cs.Observations)
+					// Apply equates to newly parsed values
+					cs.Values = c.applyEquates(cs.Values)
 				}
 
 				c.Matrix.SetStateByIndex(taxon.Index, currIdx, cs)
@@ -365,24 +365,24 @@ func (c *CharactersBlock) parseMatrix(s *scanner.Scanner) error {
 	return nil
 }
 
-// parseObservation checks for the ":" separator used in COUNT and FREQUENCY formats.
-func parseObservation(token string) StateObservation {
+// parseValue checks for the ":" separator used in COUNT and FREQUENCY formats.
+func parseValue(token string) StateValue {
 	parts := strings.SplitN(token, ":", 2)
-	obs := StateObservation{Symbol: parts[0], Weight: 1.0}
+	value := StateValue{Symbol: parts[0], Weight: 1.0}
 
 	if len(parts) == 2 {
 		if weight, err := strconv.ParseFloat(parts[1], 64); err == nil {
-			obs.Weight = weight
+			value.Weight = weight
 		}
 	}
-	return obs
+	return value
 }
 
 // expandRange takes a token like "0~3" and returns the intermediate states
 // based on the defined Format.Symbols list.
-func (c *CharactersBlock) expandRange(token string) ([]StateObservation, error) {
+func (c *CharactersBlock) expandRange(token string) ([]StateValue, error) {
 	if !strings.Contains(token, "~") {
-		return []StateObservation{parseObservation(token)}, nil
+		return []StateValue{parseValue(token)}, nil
 	}
 
 	parts := strings.Split(token, "~")
@@ -390,7 +390,7 @@ func (c *CharactersBlock) expandRange(token string) ([]StateObservation, error) 
 		return nil, fmt.Errorf("invalid range format: %s", token)
 	}
 
-	startSym, endSym := parseObservation(parts[0]), parseObservation(parts[1])
+	startSym, endSym := parseValue(parts[0]), parseValue(parts[1])
 
 	startIndex, endIndex := -1, -1
 	for i, sym := range c.Format.Symbols {
@@ -406,10 +406,10 @@ func (c *CharactersBlock) expandRange(token string) ([]StateObservation, error) 
 		return nil, fmt.Errorf("invalid or out-of-order range symbols: %s", token)
 	}
 
-	var expanded []StateObservation
+	var expanded []StateValue
 	for i := startIndex; i <= endIndex; i++ {
 		// Assigning the start weight to all expanded items (or default 1.0)
-		expanded = append(expanded, StateObservation{
+		expanded = append(expanded, StateValue{
 			Symbol: c.Format.Symbols[i],
 			Weight: startSym.Weight,
 		})
@@ -448,15 +448,15 @@ func (c *CharactersBlock) decomposeStateToken(token string, s *scanner.Scanner) 
 			// Smushed strings inside parenthesis (e.g., "(AC)")
 			if !c.Format.Tokens && !strings.Contains(inner, "~") && len(inner) > 1 {
 				for _, ch := range inner {
-					state.Observations = append(state.Observations, parseObservation(string(ch)))
+					state.Values = append(state.Values, parseValue(string(ch)))
 				}
 			} else {
-				// Expand ranges (e.g., "0~3") and append to observations
-				obs, err := c.expandRange(inner)
+				// Expand ranges (e.g., "0~3") and append to values
+				vals, err := c.expandRange(inner)
 				if err != nil {
 					return nil, err
 				}
-				state.Observations = append(state.Observations, obs...)
+				state.Values = append(state.Values, vals...)
 			}
 		}
 		// A polymorphic/uncertain block always applies to a SINGLE character column
@@ -475,8 +475,8 @@ func (c *CharactersBlock) decomposeStateToken(token string, s *scanner.Scanner) 
 	if c.Format.Tokens {
 		// If TOKENS is set, the whole word belongs to ONE character column (e.g., "absent")
 		state := CharacterState{
-			Type:         StateSingle,
-			Observations: []StateObservation{parseObservation(token)},
+			Type:   StateSingle,
+			Values: []StateValue{parseValue(token)},
 		}
 		return []CharacterState{state}, nil
 	}
@@ -494,13 +494,13 @@ func (c *CharactersBlock) decomposeStateToken(token string, s *scanner.Scanner) 
 		case c.Format.MatchChar:
 			// Catch match characters inside smushed sequences (e.g., "A..C")
 			states = append(states, CharacterState{
-				Type:         StateSingle,
-				Observations: []StateObservation{{Symbol: charStr, Weight: 1.0}},
+				Type:   StateSingle,
+				Values: []StateValue{{Symbol: charStr, Weight: 1.0}},
 			})
 		default:
 			states = append(states, CharacterState{
-				Type:         StateSingle,
-				Observations: []StateObservation{parseObservation(charStr)},
+				Type:   StateSingle,
+				Values: []StateValue{parseValue(charStr)},
 			})
 		}
 	}
@@ -509,14 +509,14 @@ func (c *CharactersBlock) decomposeStateToken(token string, s *scanner.Scanner) 
 }
 
 // applyEquates maps a symbol to its expanded values (e.g. "R" -> "A" and "G")
-func (c *CharactersBlock) applyEquates(obs []StateObservation) []StateObservation {
-	var final []StateObservation
-	for _, o := range obs {
+func (c *CharactersBlock) applyEquates(vals []StateValue) []StateValue {
+	var final []StateValue
+	for _, o := range vals {
 		if mapping, ok := c.Format.Equate[o.Symbol]; ok {
 			clean := strings.Trim(mapping, "() ")
 			fields := strings.FieldsSeq(clean)
 			for f := range fields {
-				final = append(final, StateObservation{
+				final = append(final, StateValue{
 					Symbol: f,
 					Weight: o.Weight, // Preserve weight across the expanded states
 				})

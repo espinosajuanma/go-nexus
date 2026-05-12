@@ -65,7 +65,7 @@ func (t *Taxon) SetState(char *Character, stateType StateType, states ...string)
 
 	for _, s := range states {
 		sym := t.block.Matrix.ResolveStateSymbol(char, s)
-		cs.Observations = append(cs.Observations, StateObservation{
+		cs.Values = append(cs.Values, StateValue{
 			Symbol: sym,
 			Weight: 1.0,
 		})

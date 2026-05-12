@@ -27,8 +27,8 @@ func main() {
 		char1 := char.Matrix.GetCharacterByIndex(1) // From Chunk 1 (A)
 		char6 := char.Matrix.GetCharacterByIndex(6) // From Chunk 2 (T)
 
-		fmt.Printf("Taxon1 Char 1: %s\n", taxon1.GetState(char1).Observations[0].Symbol)
-		fmt.Printf("Taxon1 Char 6: %s\n", taxon1.GetState(char6).Observations[0].Symbol)
+		fmt.Printf("Taxon1 Char 1: %s\n", taxon1.GetState(char1).Values[0].Symbol)
+		fmt.Printf("Taxon1 Char 6: %s\n", taxon1.GetState(char6).Values[0].Symbol)
 
 		fmt.Println("\n-- Exported Matrix (Should be interleaved) --")
 
