@@ -1,0 +1,15 @@
+{{if or .Project .Author}}'
+{{if .Project}}  Project: {{.Project}}
+{{end}}{{if .Author}}  Author: {{.Author}}
+{{end}}'
+{{end}}{{range .Commands}}{{.}}
+{{end}}{{if .UseTaxname}}taxname=;
+{{end}}xread
+{{if .Title}}'{{.Title}}'
+{{end}}{{ .NChar }} {{ .NTax }}
+{{range .Rows}}{{.Name}} {{.Sequence}}
+{{end}};
+{{if .HasLabels}}cnames
+{{range .Characters}}{ {{.Index}} {{.Name}}{{range .StateLabels}} {{.}}{{end}} ;
+{{end}};
+{{end}}
