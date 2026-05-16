@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
+	"github.com/espinosajuanma/go-nexus"
+	"github.com/espinosajuanma/go-nexus/blocks/characters"
 )
 
 func main() {

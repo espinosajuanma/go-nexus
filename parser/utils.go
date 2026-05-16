@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 // ExpectSemicolon is a helper to enforce command termination

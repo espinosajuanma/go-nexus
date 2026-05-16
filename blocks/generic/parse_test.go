@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/espinosajuanma/nexus/blocks/generic"
-	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/blocks/generic"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 func TestGenericBlock_Parse(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/espinosajuanma/nexus/blocks/taxa"
+	"github.com/espinosajuanma/go-nexus/blocks/taxa"
 )
 
 func TestTaxaBlock_Render(t *testing.T) {

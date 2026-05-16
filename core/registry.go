@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"github.com/espinosajuanma/nexus/utils"
+	"github.com/espinosajuanma/go-nexus/utils"
 )
 
 // TaxaRegistry defines the interface for blocks that can register taxa.

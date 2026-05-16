@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 // Parse implements the Block interface for GenericBlock.

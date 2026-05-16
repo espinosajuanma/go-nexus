@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
-	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/core"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 // Parse reads a NEXUS format file from an io.Reader and populates the Core struct.

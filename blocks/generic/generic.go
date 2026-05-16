@@ -1,7 +1,7 @@
 package generic
 
 import (
-	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/go-nexus/core"
 )
 
 // init automatically registers the GENERIC block with the core parser.

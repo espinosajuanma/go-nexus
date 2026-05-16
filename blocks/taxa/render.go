@@ -3,7 +3,7 @@ package taxa
 import (
 	_ "embed"
 
-	"github.com/espinosajuanma/nexus/templater"
+	"github.com/espinosajuanma/go-nexus/templater"
 )
 
 //go:embed taxa.tmpl

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/utils"
+	"github.com/espinosajuanma/go-nexus/utils"
 )
 
 type Matrix struct {

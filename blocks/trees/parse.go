@@ -3,8 +3,8 @@ package trees
 import (
 	"strings"
 
-	"github.com/espinosajuanma/nexus/parser"
-	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/parser"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 // Parse implements the Block interface for TreesBlock.

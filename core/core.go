@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 // New creates a new, empty Nexus file container ready for building.

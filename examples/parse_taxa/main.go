@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/espinosajuanma/nexus"
+	"github.com/espinosajuanma/go-nexus"
 )
 
 func main() {

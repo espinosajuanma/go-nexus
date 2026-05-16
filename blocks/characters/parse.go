@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/parser"
-	"github.com/espinosajuanma/nexus/scanner"
-	"github.com/espinosajuanma/nexus/utils"
+	"github.com/espinosajuanma/go-nexus/parser"
+	"github.com/espinosajuanma/go-nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/utils"
 )
 
 // Parse implements the Block interface for CharactersBlock.

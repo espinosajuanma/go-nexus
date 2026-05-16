@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/espinosajuanma/nexus/blocks/characters"
+	"github.com/espinosajuanma/go-nexus/blocks/characters"
 )
 
 func TestNew(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/exports/xread"
+	"github.com/espinosajuanma/go-nexus"
+	"github.com/espinosajuanma/go-nexus/blocks/characters"
+	"github.com/espinosajuanma/go-nexus/exports/xread"
 )
 
 // setupTestNexus programmatically creates a realistic Nexus AST for testing.

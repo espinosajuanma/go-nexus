@@ -10,7 +10,7 @@ phylogenetic files.
 ## Installation
 
 ```bash
-go get github.com/espinosajuanma/nexus
+go get github.com/espinosajuanma/go-nexus
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/espinosajuanma/nexus"
+	"github.com/espinosajuanma/go-nexus"
 )
 
 func main() {
@@ -60,8 +60,8 @@ package main
 import (
 	"os"
 
-	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
+	"github.com/espinosajuanma/go-nexus"
+	"github.com/espinosajuanma/go-nexus/blocks/characters"
 )
 
 func main() {

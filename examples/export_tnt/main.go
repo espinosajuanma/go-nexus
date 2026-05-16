@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/exports/xread"
+	"github.com/espinosajuanma/go-nexus"
+	"github.com/espinosajuanma/go-nexus/exports/xread"
 )
 
 func main() {

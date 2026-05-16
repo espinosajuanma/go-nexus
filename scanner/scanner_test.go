@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/espinosajuanma/nexus/scanner"
+	. "github.com/espinosajuanma/go-nexus/scanner"
 )
 
 func TestScanner(t *testing.T) {

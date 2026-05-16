@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/go-nexus"
+	"github.com/espinosajuanma/go-nexus/blocks/characters"
+	"github.com/espinosajuanma/go-nexus/core"
 )
 
 // TestAddTaxonNilPointerFix ensures the CharactersBlock init and New functions

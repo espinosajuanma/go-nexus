@@ -5,13 +5,13 @@ import (
 	"reflect"
 	"testing"
 
-	_ "github.com/espinosajuanma/nexus/blocks/characters"
-	_ "github.com/espinosajuanma/nexus/blocks/generic"
-	_ "github.com/espinosajuanma/nexus/blocks/taxa"
-	_ "github.com/espinosajuanma/nexus/blocks/trees"
-	. "github.com/espinosajuanma/nexus/core"
-	"github.com/espinosajuanma/nexus/scanner"
-	"github.com/espinosajuanma/nexus/utils"
+	_ "github.com/espinosajuanma/go-nexus/blocks/characters"
+	_ "github.com/espinosajuanma/go-nexus/blocks/generic"
+	_ "github.com/espinosajuanma/go-nexus/blocks/taxa"
+	_ "github.com/espinosajuanma/go-nexus/blocks/trees"
+	. "github.com/espinosajuanma/go-nexus/core"
+	"github.com/espinosajuanma/go-nexus/scanner"
+	"github.com/espinosajuanma/go-nexus/utils"
 )
 
 // --- MOCKS ---

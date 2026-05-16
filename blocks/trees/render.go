@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/templater"
-	"github.com/espinosajuanma/nexus/utils"
+	"github.com/espinosajuanma/go-nexus/templater"
+	"github.com/espinosajuanma/go-nexus/utils"
 )
 
 //go:embed trees.tmpl

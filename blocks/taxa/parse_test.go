@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/espinosajuanma/nexus/blocks/taxa"
-	"github.com/espinosajuanma/nexus/scanner"
+	. "github.com/espinosajuanma/go-nexus/blocks/taxa"
+	"github.com/espinosajuanma/go-nexus/scanner"
 )
 
 func TestTaxaBlock_Parse(t *testing.T) {

@@ -3,7 +3,7 @@ package generic
 import (
 	_ "embed"
 
-	"github.com/espinosajuanma/nexus/templater"
+	"github.com/espinosajuanma/go-nexus/templater"
 )
 
 //go:embed generic.tmpl

@@ -3,12 +3,12 @@ package nexus
 import (
 	"io"
 
-	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/blocks/generic"
-	"github.com/espinosajuanma/nexus/blocks/taxa"
-	"github.com/espinosajuanma/nexus/blocks/trees"
-	"github.com/espinosajuanma/nexus/core"
-	"github.com/espinosajuanma/nexus/parser"
+	"github.com/espinosajuanma/go-nexus/blocks/characters"
+	"github.com/espinosajuanma/go-nexus/blocks/generic"
+	"github.com/espinosajuanma/go-nexus/blocks/taxa"
+	"github.com/espinosajuanma/go-nexus/blocks/trees"
+	"github.com/espinosajuanma/go-nexus/core"
+	"github.com/espinosajuanma/go-nexus/parser"
 )
 
 // Nexus is the smart wrapper around the core AST.

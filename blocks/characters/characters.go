@@ -1,7 +1,7 @@
 package characters
 
 import (
-	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/go-nexus/core"
 )
 
 // init automatically registers the CHARACTERS block with the core parser.

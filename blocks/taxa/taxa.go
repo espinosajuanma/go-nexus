@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/espinosajuanma/nexus/core"
-	"github.com/espinosajuanma/nexus/parser"
+	"github.com/espinosajuanma/go-nexus/core"
+	"github.com/espinosajuanma/go-nexus/parser"
 )
 
 // init automatically registers the TAXA block with the core parser.
