@@ -12,7 +12,7 @@ import (
 // TestAddTaxonNilPointerFix ensures the CharactersBlock init and New functions
 // properly set the Matrix back-pointer, preventing panics on AddTaxon.
 func TestAddTaxonNilPointerFix(t *testing.T) {
-	cb := characters.New(&core.Nexus{}, characters.Standard)
+	cb := characters.New(&core.Core{}, characters.Standard)
 
 	// AddTaxon used to panic here because cb.Matrix.parent was nil
 	taxon := cb.AddTaxon("Taxon1")
@@ -43,7 +43,7 @@ func TestParseInterleavedMatrix(t *testing.T) {
 		t.Fatalf("Failed to parse nexus string: %v", err)
 	}
 
-	charBlock, ok := core.GetBlock[*characters.CharactersBlock](nex)
+	charBlock, ok := nex.GetCharactersBlock()
 	if !ok {
 		t.Fatal("Failed to extract CharactersBlock")
 	}
@@ -84,7 +84,7 @@ func TestParseMatchChar(t *testing.T) {
 		t.Fatalf("Failed to parse nexus string: %v", err)
 	}
 
-	charBlock, ok := core.GetBlock[*characters.CharactersBlock](nex)
+	charBlock, ok := nex.GetCharactersBlock()
 	if !ok {
 		t.Fatal("Failed to extract CharactersBlock")
 	}
@@ -122,7 +122,7 @@ func TestParseEquatesAndPolymorphic(t *testing.T) {
 		t.Fatalf("Failed to parse nexus string: %v", err)
 	}
 
-	charBlock, ok := core.GetBlock[*characters.CharactersBlock](nex)
+	charBlock, ok := nex.GetCharactersBlock()
 	if !ok {
 		t.Fatal("Failed to extract CharactersBlock")
 	}
@@ -152,7 +152,7 @@ func TestParseEquatesAndPolymorphic(t *testing.T) {
 // but correctly applied during rendering when set.
 func TestMatchCharDefaultsAndRendering(t *testing.T) {
 	// Verify Default Behavior (Disabled)
-	cb := characters.New(&core.Nexus{}, characters.DNA)
+	cb := characters.New(&core.Core{}, characters.DNA)
 	if cb.Format.MatchChar != "" {
 		t.Errorf("Expected MatchChar to be empty by default, got '%s'", cb.Format.MatchChar)
 	}
@@ -212,7 +212,7 @@ func TestParseAndRenderMatchChar(t *testing.T) {
 		t.Fatalf("Failed to parse: %v", err)
 	}
 
-	cb, _ := core.GetBlock[*characters.CharactersBlock](nex)
+	cb, _ := nex.GetCharactersBlock()
 
 	// Verify parsed state
 	if cb.Format.MatchChar != "." {

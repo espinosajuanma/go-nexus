@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/parser"
 	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 // Parse implements the Block interface for TaxaBlock.
@@ -71,7 +71,7 @@ func (t *TaxaBlock) parseTitle(s *scanner.Scanner) error {
 	}
 	if len(tokens) > 0 {
 		title := strings.Join(tokens, " ")
-		t.Title = core.DecodeName(title)
+		t.Title = utils.DecodeName(title)
 	}
 	return nil
 }
@@ -132,7 +132,7 @@ func (t *TaxaBlock) parseTaxLabels(s *scanner.Scanner, hasDimensions bool, hasTa
 	}
 
 	for _, l := range labels {
-		decodedName := core.DecodeName(l)
+		decodedName := utils.DecodeName(l)
 		normalized := normalizeTaxonName(decodedName)
 
 		if parser.IsAllDigits(normalized) {
@@ -160,7 +160,7 @@ func (t *TaxaBlock) parseTaxSet(s *scanner.Scanner) error {
 		return fmt.Errorf("malformed TAXSET command")
 	}
 
-	name := core.DecodeName(tokens[0])
+	name := utils.DecodeName(tokens[0])
 	format := StandardFormat
 	definitionStart := 1
 
@@ -199,7 +199,7 @@ func (t *TaxaBlock) parseTaxPartition(s *scanner.Scanner) error {
 		return fmt.Errorf("malformed TAXPARTITION command")
 	}
 
-	name := core.DecodeName(tokens[0])
+	name := utils.DecodeName(tokens[0])
 	format := StandardFormat
 	definitionStart := 1
 
@@ -233,7 +233,7 @@ func (t *TaxaBlock) parseTaxPartition(s *scanner.Scanner) error {
 			tok := defTokens[i]
 			if tok == ":" && i > 0 {
 				// The previous token was actually the subset name
-				currentSubset = core.DecodeName(defTokens[i-1])
+				currentSubset = utils.DecodeName(defTokens[i-1])
 				if len(currentList) > 0 {
 					currentList = currentList[:len(currentList)-1]
 				}

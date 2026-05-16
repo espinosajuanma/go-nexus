@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 type Matrix struct {
@@ -85,7 +85,7 @@ type MatrixChunk struct {
 func (m *Matrix) AddCharacter(name string, states ...string) *Character {
 	char := &Character{
 		Index:       len(m.Characters) + 1,
-		Name:        core.DecodeName(name),
+		Name:        utils.DecodeName(name),
 		StateLabels: states,
 	}
 	m.Characters = append(m.Characters, char)
@@ -103,7 +103,7 @@ func (m *Matrix) AddCharacter(name string, states ...string) *Character {
 
 // AddTaxon registers a new taxon and prepares its matrix row.
 func (m *Matrix) AddTaxon(name string) *Taxon {
-	sanitizedName := core.DecodeName(name)
+	sanitizedName := utils.DecodeName(name)
 
 	taxon := &Taxon{
 		Index:  len(m.Taxa),

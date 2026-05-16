@@ -4,17 +4,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/espinosajuanma/nexus"
 	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/exports/xread"
 )
 
-// ... inside xread_test.go ...
-
 // setupTestNexus programmatically creates a realistic Nexus AST for testing.
-func setupTestNexus() *core.Nexus {
-	nex := core.New()
-	cb := characters.New(nex, characters.Standard)
+func setupTestNexus() *nexus.Nexus {
+	nex := nexus.New()
+	cb := nex.NewCharactersBlock(characters.Standard)
 	cb.Title = "Morphology"
 
 	// Setup Characters
@@ -134,8 +132,8 @@ func TestTntExport(t *testing.T) {
 
 func TestNoLabels(t *testing.T) {
 	// Create an empty matrix with no character names or states
-	nex := core.New()
-	cb := characters.New(nex, characters.Standard)
+	nex := nexus.New()
+	cb := nex.NewCharactersBlock(characters.Standard)
 	cb.Matrix.AddCharacter("") // Empty name
 	t1 := cb.Matrix.AddTaxon("TaxonA")
 	t1.SetState(cb.Matrix.Characters[0], characters.StateMissing)

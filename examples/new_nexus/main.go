@@ -8,7 +8,6 @@ import (
 
 	"github.com/espinosajuanma/nexus"
 	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/blocks/taxa"
 	"github.com/espinosajuanma/nexus/blocks/trees"
 )
 
@@ -17,11 +16,11 @@ func main() {
 	nex := nexus.New()
 
 	// Create a TAXA block to set a specific title.
-	tb := taxa.New(nex)
+	tb := nex.NewTaxaBlock()
 	tb.SetTitle("Database_Export")
 
 	// Create the CHARACTERS block
-	cb := characters.New(nex, characters.Standard)
+	cb := nex.NewCharactersBlock(characters.Standard)
 	cb.SetTitle("Morphology Matrix")
 
 	taxons := []string{"fish", "frog", "snake", "mouse"}
@@ -47,7 +46,7 @@ func main() {
 	}
 
 	// Create the TREES block
-	tr := trees.New(nex)
+	tr := nex.NewTreesBlock()
 
 	// Map tokens to taxa (This AUTO-CREATES the TAXA block if not present!)
 	tr.AddTranslate("1", "fish")

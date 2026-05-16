@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/taxa"
-	"github.com/espinosajuanma/nexus/core"
 )
 
 func main() {
@@ -28,7 +26,7 @@ func main() {
 	}
 
 	// Retrieve the TAXA block
-	if taxaBlock, ok := core.GetBlock[*taxa.TaxaBlock](nex); ok {
+	if taxaBlock, ok := nex.GetTaxaBlock(); ok {
 		fmt.Println("-- Found a TAXA Block --")
 		fmt.Printf("Title: %s\n", taxaBlock.Title)
 		fmt.Printf("Taxa Count (NTAX): %d\n", taxaBlock.Dimensions)

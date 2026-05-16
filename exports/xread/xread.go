@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/espinosajuanma/nexus"
 	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/templater"
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 //go:embed nona.tmpl
@@ -37,7 +38,7 @@ type CharLabel struct {
 
 // Exporter unifies the export configuration for xread-based formats.
 type Exporter struct {
-	Nexus      *core.Nexus
+	Nexus      *nexus.Nexus
 	Variant    Variant
 	Project    string
 	Author     string
@@ -46,7 +47,7 @@ type Exporter struct {
 }
 
 // New creates a new Exporter wrapping the Nexus AST for a specific Variant.
-func New(nex *core.Nexus, variant Variant) *Exporter {
+func New(nex *nexus.Nexus, variant Variant) *Exporter {
 	return &Exporter{
 		Nexus:      nex,
 		Variant:    variant,
@@ -81,7 +82,7 @@ func (e *Exporter) AddCommand(cmd string) *Exporter {
 // -- Template Helper Methods --
 
 func (e *Exporter) charBlock() (*characters.CharactersBlock, error) {
-	cb, ok := core.GetBlock[*characters.CharactersBlock](e.Nexus)
+	cb, ok := e.Nexus.GetCharactersBlock()
 	if !ok {
 		return nil, fmt.Errorf("no CHARACTERS block found in the Nexus file")
 	}
@@ -120,7 +121,7 @@ func (e *Exporter) Rows() []Row {
 
 	maxTaxonLen := 0
 	for _, taxon := range cb.Matrix.Taxa {
-		encodedName := core.EncodeName(taxon.Name)
+		encodedName := utils.EncodeName(taxon.Name)
 		if len(encodedName) > maxTaxonLen {
 			maxTaxonLen = len(encodedName)
 		}
@@ -128,7 +129,7 @@ func (e *Exporter) Rows() []Row {
 
 	var rows []Row
 	for _, taxon := range cb.Matrix.Taxa {
-		encodedName := core.EncodeName(taxon.Name)
+		encodedName := utils.EncodeName(taxon.Name)
 		paddedName := fmt.Sprintf("%-*s", maxTaxonLen, encodedName)
 
 		var seqBuilder strings.Builder
@@ -195,12 +196,12 @@ func (e *Exporter) Characters() []CharLabel {
 
 			var stateLabels []string
 			for _, sl := range char.StateLabels {
-				stateLabels = append(stateLabels, core.EncodeName(sl))
+				stateLabels = append(stateLabels, utils.EncodeName(sl))
 			}
 
 			chars = append(chars, CharLabel{
 				Index:       i,
-				Name:        core.EncodeName(charName),
+				Name:        utils.EncodeName(charName),
 				StateLabels: stateLabels,
 			})
 		}

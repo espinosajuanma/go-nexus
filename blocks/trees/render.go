@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/templater"
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 //go:embed trees.tmpl
@@ -30,7 +30,7 @@ func (t *TreesBlock) Render() (string, error) {
 	for i, tok := range tokens {
 		sortedTranslate = append(sortedTranslate, translatePair{
 			Token:  tok,
-			Taxon:  core.EncodeName(t.Translate[tok]),
+			Taxon:  utils.EncodeName(t.Translate[tok]),
 			IsLast: i == len(tokens)-1,
 		})
 	}

@@ -11,6 +11,7 @@ import (
 	_ "github.com/espinosajuanma/nexus/blocks/trees"
 	. "github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 // --- MOCKS ---
@@ -25,18 +26,21 @@ type MockBlock struct {
 func (m *MockBlock) Parse(s *scanner.Scanner) error { return nil }
 func (m *MockBlock) Render() (string, error)        { return m.RenderOutput, m.RenderErr }
 func (m *MockBlock) AddTaxon(name string)           { m.AddedTaxa = append(m.AddedTaxa, name) }
+func (m *MockBlock) GetName() string                { return "" }
 
 // Another mock block to test the generic GetBlock function
 type AnotherMockBlock struct{}
 
 func (a *AnotherMockBlock) Parse(s *scanner.Scanner) error { return nil }
 func (a *AnotherMockBlock) Render() (string, error)        { return "", nil }
+func (a *AnotherMockBlock) GetName() string                { return "" }
 
 // A third mock to test missing block lookups
 type MissingMockBlock struct{}
 
 func (m *MissingMockBlock) Parse(s *scanner.Scanner) error { return nil }
 func (m *MissingMockBlock) Render() (string, error)        { return "", nil }
+func (m *MissingMockBlock) GetName() string                { return "" }
 
 // --- TESTS ---
 
@@ -56,7 +60,7 @@ func TestUtils_DecodeName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := DecodeName(tt.input); got != tt.expected {
+			if got := utils.DecodeName(tt.input); got != tt.expected {
 				t.Errorf("DecodeName(%q) = %q; want %q", tt.input, got, tt.expected)
 			}
 		})
@@ -75,7 +79,7 @@ func TestUtils_EncodeName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := EncodeName(tt.input); got != tt.expected {
+			if got := utils.EncodeName(tt.input); got != tt.expected {
 				t.Errorf("EncodeName(%q) = %q; want %q", tt.input, got, tt.expected)
 			}
 		})
@@ -97,7 +101,7 @@ func TestUtils_QuoteName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			if got := QuoteName(tt.input); got != tt.expected {
+			if got := utils.QuoteName(tt.input); got != tt.expected {
 				t.Errorf("QuoteName(%q) = %q; want %q", tt.input, got, tt.expected)
 			}
 		})

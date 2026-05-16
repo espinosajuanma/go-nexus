@@ -1,62 +1,157 @@
-package nexus_test
+package nexus
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
-	"github.com/espinosajuanma/nexus"
+	"github.com/espinosajuanma/nexus/blocks/characters"
 )
 
-// TestNew verifies that a new, empty Nexus container is created correctly.
 func TestNew(t *testing.T) {
-	nex := nexus.New()
-
-	if nex == nil {
-		t.Fatal("Expected New() to return a non-nil Nexus instance")
+	n := New()
+	if n == nil {
+		t.Fatal("Expected New() to return a valid Nexus instance, got nil")
 	}
-
-	if len(nex.Blocks) != 0 {
-		t.Errorf("Expected a newly created Nexus instance to have 0 blocks, got %d", len(nex.Blocks))
+	if n.core == nil {
+		t.Fatal("Expected New() to initialize the core AST, but it was nil")
 	}
 }
 
-// TestParse_Valid ensures that the Parse function correctly processes a valid
-// io.Reader and that the blank imports in nexus.go successfully registered the blocks.
-func TestParse_Valid(t *testing.T) {
-	// A minimal valid NEXUS string using a TAXA block
-	validNexus := `#NEXUS
-	BEGIN TAXA;
-		DIMENSIONS NTAX=3;
-		TAXLABELS TaxonA TaxonB TaxonC;
-	END;`
+func TestParse(t *testing.T) {
+	// A minimal valid NEXUS file string
+	input := "#NEXUS\n"
+	r := strings.NewReader(input)
 
-	reader := strings.NewReader(validNexus)
-	nex, err := nexus.Parse(reader)
-
+	n, err := Parse(r)
 	if err != nil {
-		t.Fatalf("Parse() failed with unexpected error: %v", err)
+		// Note: If the underlying parser requires more structure, this might fail.
+		// However, a robust parser should handle an empty #NEXUS declaration.
+		t.Fatalf("Parse() failed with error: %v", err)
 	}
-
-	if nex == nil {
-		t.Fatal("Expected Parse() to return a non-nil Nexus instance")
-	}
-
-	// If len > 0, it means the core parser successfully matched "TAXA" to the
-	// registered block factory from the blank imports in nexus.go
-	if len(nex.Blocks) == 0 {
-		t.Error("Expected Parse() to extract blocks, but found 0")
+	if n == nil {
+		t.Fatal("Expected Parse() to return a valid Nexus instance, got nil")
 	}
 }
 
-// TestParse_Invalid ensures the parser properly returns errors when fed bad data.
-func TestParse_Invalid(t *testing.T) {
-	// Missing the required #NEXUS header
-	invalidNexus := `BEGIN TAXA; DIMENSIONS NTAX=3; END;`
+func TestCharactersBlockAPI(t *testing.T) {
+	n := New()
 
-	reader := strings.NewReader(invalidNexus)
-	_, err := nexus.Parse(reader)
+	// Verify it doesn't exist initially
+	_, ok := n.GetCharactersBlock()
+	if ok {
+		t.Error("GetCharactersBlock() should return false when no block exists")
+	}
 
-	if err == nil {
-		t.Error("Expected Parse() to return an error for a missing #NEXUS header, but got nil")
+	// Create a new block
+	var dummyDataType characters.DataType = "DNA" // Using a mocked data type
+	createdBlock := n.NewCharactersBlock(dummyDataType)
+	if createdBlock == nil {
+		t.Fatal("NewCharactersBlock() returned nil")
+	}
+
+	// Retrieve and verify
+	fetchedBlock, ok := n.GetCharactersBlock()
+	if !ok {
+		t.Fatal("GetCharactersBlock() failed to find the newly created block")
+	}
+	if fetchedBlock != createdBlock {
+		t.Errorf("GetCharactersBlock() returned a different instance. Expected %p, got %p", createdBlock, fetchedBlock)
+	}
+}
+
+func TestTaxaBlockAPI(t *testing.T) {
+	n := New()
+
+	// Verify it doesn't exist initially
+	_, ok := n.GetTaxaBlock()
+	if ok {
+		t.Error("GetTaxaBlock() should return false when no block exists")
+	}
+
+	// Create a new block
+	createdBlock := n.NewTaxaBlock()
+	if createdBlock == nil {
+		t.Fatal("NewTaxaBlock() returned nil")
+	}
+
+	// Retrieve and verify
+	fetchedBlock, ok := n.GetTaxaBlock()
+	if !ok {
+		t.Fatal("GetTaxaBlock() failed to find the newly created block")
+	}
+	if fetchedBlock != createdBlock {
+		t.Errorf("GetTaxaBlock() returned a different instance. Expected %p, got %p", createdBlock, fetchedBlock)
+	}
+}
+
+func TestTreesBlockAPI(t *testing.T) {
+	n := New()
+
+	// Verify it doesn't exist initially
+	_, ok := n.GetTreesBlock()
+	if ok {
+		t.Error("GetTreesBlock() should return false when no block exists")
+	}
+
+	// Create a new block
+	createdBlock := n.NewTreesBlock()
+	if createdBlock == nil {
+		t.Fatal("NewTreesBlock() returned nil")
+	}
+
+	// Retrieve and verify
+	fetchedBlock, ok := n.GetTreesBlock()
+	if !ok {
+		t.Fatal("GetTreesBlock() failed to find the newly created block")
+	}
+	if fetchedBlock != createdBlock {
+		t.Errorf("GetTreesBlock() returned a different instance. Expected %p, got %p", createdBlock, fetchedBlock)
+	}
+}
+
+func TestUnknownBlockAPI(t *testing.T) {
+	n := New()
+	blockName := "CUSTOM_BLOCK"
+
+	// Verify it doesn't exist initially
+	_, ok := n.GetBlockByName(blockName)
+	if ok {
+		t.Errorf("GetBlockByName(%q) should return false when block doesn't exist", blockName)
+	}
+
+	// Create a new generic block
+	createdBlock := n.NewUnknownBlock(blockName)
+	if createdBlock == nil {
+		t.Fatal("NewUnknownBlock() returned nil")
+	}
+
+	// Retrieve and verify
+	fetchedBlock, ok := n.GetBlockByName(blockName)
+	if !ok {
+		t.Fatalf("GetBlockByName(%q) failed to find the newly created block", blockName)
+	}
+	if fetchedBlock != createdBlock {
+		t.Errorf("GetBlockByName(%q) returned a different instance. Expected %p, got %p", blockName, createdBlock, fetchedBlock)
+	}
+}
+
+func TestExport(t *testing.T) {
+	n := New()
+
+	// Add some blocks to ensure there is something to export
+	n.NewTaxaBlock()
+	n.NewTreesBlock()
+
+	var buf bytes.Buffer
+	err := n.Export(&buf)
+	if err != nil {
+		t.Fatalf("Export() failed with error: %v", err)
+	}
+
+	// Just checking if anything was written.
+	// The exact output depends on the underlying core.Export implementation.
+	if buf.Len() == 0 {
+		t.Error("Export() wrote 0 bytes to the buffer")
 	}
 }

@@ -9,10 +9,10 @@ import (
 	"github.com/espinosajuanma/nexus/scanner"
 )
 
-// Parse reads a NEXUS format file from an io.Reader and populates the Nexus struct.
-func Parse(r io.Reader) (*core.Nexus, error) {
+// Parse reads a NEXUS format file from an io.Reader and populates the Core struct.
+func Parse(r io.Reader) (*core.Core, error) {
 	scanner := scanner.NewScanner(r)
-	nex := &core.Nexus{
+	nex := &core.Core{
 		Blocks: make([]core.Block, 0),
 	}
 

@@ -14,7 +14,7 @@ func init() {
 }
 
 // New creates, appends, and returns a new TREES block.
-func New(n *core.Nexus) *TreesBlock {
+func New(n *core.Core) *TreesBlock {
 	tb := &TreesBlock{
 		nexus:     n,
 		Translate: make(map[string]string),
@@ -26,15 +26,20 @@ func New(n *core.Nexus) *TreesBlock {
 
 // TreesBlock stores information about trees.
 type TreesBlock struct {
-	nexus     *core.Nexus
+	nexus     *core.Core
 	Name      string
 	Translate map[string]string
 	Trees     []Tree
 }
 
-// SetNexus implements the NexusAware interface.
-func (t *TreesBlock) SetNexus(n *core.Nexus) {
+// SetCore implements the CoreAware interface.
+func (t *TreesBlock) SetCore(n *core.Core) {
 	t.nexus = n
+}
+
+// GetName returns the name of the block, fulfilling the Block interface.
+func (t *TreesBlock) GetName() string {
+	return t.Name
 }
 
 // AddTranslate maps an arbitrary token (like "1") to a valid taxon name .

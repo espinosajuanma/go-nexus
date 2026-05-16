@@ -2,6 +2,8 @@ package core
 
 import (
 	"strings"
+
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 // TaxaRegistry defines the interface for blocks that can register taxa.
@@ -21,9 +23,22 @@ func RegisterBlock(name string, factory BlockFactory) {
 	BlockRegistry[strings.ToUpper(name)] = factory
 }
 
+// GetBlock is a generic helper that searches the parsed blocks
+// and returns the first block matching the requested type.
+// It returns the typed block and a boolean indicating if it was found.
+func GetBlock[T Block](n *Core) (T, bool) {
+	for _, b := range n.Blocks {
+		if typedBlock, ok := b.(T); ok {
+			return typedBlock, true
+		}
+	}
+	var zero T
+	return zero, false
+}
+
 // RegisterTaxon ensures the taxon exists. It decouples the core from the taxa block.
-func (n *Nexus) RegisterTaxon(name string) {
-	sanitizedName := DecodeName(name)
+func (n *Core) RegisterTaxon(name string) {
+	sanitizedName := utils.DecodeName(name)
 
 	// Look for an existing block that implements the TaxaRegistry interface
 	for _, b := range n.Blocks {

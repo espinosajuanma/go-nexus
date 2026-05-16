@@ -14,8 +14,11 @@ func init() {
 }
 
 // New creates, appends, and returns a new generic block.
-func New(n *core.Nexus) *GenericBlock {
-	gb := &GenericBlock{nexus: n}
+func New(n *core.Core, name string) *GenericBlock {
+	gb := &GenericBlock{
+		nexus: n,
+		Name:  name,
+	}
 	n.Blocks = append(n.Blocks, gb)
 	return gb
 }
@@ -24,12 +27,17 @@ func New(n *core.Nexus) *GenericBlock {
 // designed to be used for blocks that don't fit into the standard categories or
 // for custom user-defined blocks.
 type GenericBlock struct {
-	nexus   *core.Nexus
+	nexus   *core.Core
 	Name    string
 	Content string
 }
 
-// SetNexus implements the NexusAware interface.
-func (t *GenericBlock) SetNexus(n *core.Nexus) {
+// SetCore implements the CoreAware interface.
+func (t *GenericBlock) SetCore(n *core.Core) {
 	t.nexus = n
+}
+
+// GetName returns the name of the block, fulfilling the Block interface.
+func (t *GenericBlock) GetName() string {
+	return t.Name
 }

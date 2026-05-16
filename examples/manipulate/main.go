@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/core"
 )
 
 func main() {
@@ -17,7 +15,7 @@ func main() {
 
 	nex, _ := nexus.Parse(file)
 
-	if char, ok := core.GetBlock[*characters.CharactersBlock](nex); ok {
+	if char, ok := nex.GetCharactersBlock(); ok {
 		fmt.Println("=== Manipulation Example ===")
 
 		bat := char.Matrix.GetTaxon("bat")

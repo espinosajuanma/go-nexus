@@ -18,7 +18,7 @@ func init() {
 }
 
 // New creates, appends, and returns a new TAXA block.
-func New(n *core.Nexus) *TaxaBlock {
+func New(n *core.Core) *TaxaBlock {
 	tb := &TaxaBlock{
 		nexus: n,
 		Name:  "TAXA",
@@ -29,7 +29,7 @@ func New(n *core.Nexus) *TaxaBlock {
 
 // TaxaBlock specifies information about taxa.
 type TaxaBlock struct {
-	nexus         *core.Nexus
+	nexus         *core.Core
 	Name          string
 	Title         string
 	Dimensions    int
@@ -38,14 +38,19 @@ type TaxaBlock struct {
 	TaxSets       map[string]TaxSet
 }
 
-// SetNexus implements the NexusAware interface.
-func (t *TaxaBlock) SetNexus(n *core.Nexus) {
+// SetCore implements the CoreAware interface.
+func (t *TaxaBlock) SetCore(n *core.Core) {
 	t.nexus = n
 }
 
 // SetTitle applies a title to the block.
 func (t *TaxaBlock) SetTitle(title string) {
 	t.Title = title
+}
+
+// GetName returns the name of the block, fulfilling the Block interface.
+func (t *TaxaBlock) GetName() string {
+	return t.Name
 }
 
 // ContainsTaxon checks if a taxon exists in the block

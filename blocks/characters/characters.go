@@ -29,7 +29,7 @@ func init() {
 
 // CharactersBlock defines characters and includes character data.
 type CharactersBlock struct {
-	nexus      *core.Nexus
+	nexus      *core.Core
 	Name       string
 	Title      string
 	Dimensions int
@@ -39,7 +39,7 @@ type CharactersBlock struct {
 }
 
 // New creates, appends, and returns a new CHARACTERS block.
-func New(n *core.Nexus, dt DataType) *CharactersBlock {
+func New(n *core.Core, dt DataType) *CharactersBlock {
 	cb := &CharactersBlock{
 		nexus: n,
 		Name:  "CHARACTERS",
@@ -58,8 +58,8 @@ func New(n *core.Nexus, dt DataType) *CharactersBlock {
 	return cb
 }
 
-// SetNexus implements the NexusAware interface.
-func (c *CharactersBlock) SetNexus(n *core.Nexus) {
+// SetCore implements the CoreAware interface.
+func (c *CharactersBlock) SetCore(n *core.Core) {
 	c.nexus = n
 }
 
@@ -68,6 +68,12 @@ func (c *CharactersBlock) SetTitle(title string) {
 	c.Title = title
 }
 
+// AddTaxon adds a taxon to the character matrix and returns the new Taxon.
 func (c *CharactersBlock) AddTaxon(name string) *Taxon {
 	return c.Matrix.AddTaxon(name)
+}
+
+// GetName returns the name of the block, fulfilling the Block interface.
+func (c *CharactersBlock) GetName() string {
+	return c.Name
 }

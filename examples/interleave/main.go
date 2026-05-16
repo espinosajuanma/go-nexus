@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/core"
 )
 
 func main() {
@@ -16,7 +14,7 @@ func main() {
 
 	nex, _ := nexus.Parse(file)
 
-	if char, ok := core.GetBlock[*characters.CharactersBlock](nex); ok {
+	if char, ok := nex.GetCharactersBlock(); ok {
 		fmt.Println("=== Interleave Example ===")
 		fmt.Printf("Taxon amount in matrix: %d\n", len(char.Matrix.Taxa))
 		fmt.Printf("Character amount in matrix: %d\n", len(char.Matrix.Characters))

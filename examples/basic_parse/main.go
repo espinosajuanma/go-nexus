@@ -7,10 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/espinosajuanma/nexus"
-	"github.com/espinosajuanma/nexus/blocks/characters"
-	"github.com/espinosajuanma/nexus/blocks/taxa"
-	"github.com/espinosajuanma/nexus/blocks/trees"
-	"github.com/espinosajuanma/nexus/core"
 )
 
 func main() {
@@ -29,7 +25,7 @@ func main() {
 		log.Fatalf("Failed to parse NEXUS file: %v", err)
 	}
 
-	if taxa, ok := core.GetBlock[*taxa.TaxaBlock](nex); ok {
+	if taxa, ok := nex.GetTaxaBlock(); ok {
 		fmt.Println("-- Found a TAXA Block --")
 		fmt.Printf("Taxa Count: %d\n", taxa.Dimensions)
 		fmt.Printf("Taxa Labels: %v\n", taxa.TaxLabels)
@@ -37,7 +33,7 @@ func main() {
 		fmt.Println("-- No TAXA Block found --")
 	}
 
-	if char, ok := core.GetBlock[*characters.CharactersBlock](nex); ok {
+	if char, ok := nex.GetCharactersBlock(); ok {
 		char.AddTaxon("Sarasa 1")
 		fmt.Println("-- Found a CHARACTERS Block --")
 		fmt.Printf("Characters Count: %d\n", char.Dimensions)
@@ -46,7 +42,7 @@ func main() {
 		fmt.Println("-- No CHARACTERS Block found --")
 	}
 
-	if trees, ok := core.GetBlock[*trees.TreesBlock](nex); ok {
+	if trees, ok := nex.GetTreesBlock(); ok {
 		fmt.Println("-- Found a TREES Block --")
 		fmt.Printf("Trees Count: %d\n", len(trees.Trees))
 	} else {

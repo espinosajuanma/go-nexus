@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/espinosajuanma/nexus/core"
 	"github.com/espinosajuanma/nexus/parser"
 	"github.com/espinosajuanma/nexus/scanner"
+	"github.com/espinosajuanma/nexus/utils"
 )
 
 // Parse implements the Block interface for CharactersBlock.
@@ -84,7 +84,7 @@ func (c *CharactersBlock) parseTitle(s *scanner.Scanner) error {
 		return err
 	}
 	if len(tokens) > 0 {
-		c.Title = core.DecodeName(strings.Join(tokens, " "))
+		c.Title = utils.DecodeName(strings.Join(tokens, " "))
 	}
 	return nil
 }
@@ -277,9 +277,9 @@ func (c *CharactersBlock) parseCharStateLabels(s *scanner.Scanner) error {
 			char := c.Matrix.Characters[currentID-1]
 
 			if !readingStates {
-				char.Name = core.DecodeName(t)
+				char.Name = utils.DecodeName(t)
 			} else {
-				stateName := core.DecodeName(t)
+				stateName := utils.DecodeName(t)
 				if stateName == "_" {
 					stateName = "" // Translate NEXUS underscores back into empty strings internally
 				}
@@ -542,7 +542,7 @@ func (c *CharactersBlock) parseCharLabels(s *scanner.Scanner) error {
 			continue // Commas are optional separators
 		}
 		if charIndex < len(c.Matrix.Characters) {
-			c.Matrix.Characters[charIndex].Name = core.DecodeName(t)
+			c.Matrix.Characters[charIndex].Name = utils.DecodeName(t)
 			charIndex++
 		}
 	}
@@ -575,7 +575,7 @@ func (c *CharactersBlock) parseStateLabels(s *scanner.Scanner) error {
 
 		// Otherwise, it's a state label for the current character ID
 		if currentID <= len(c.Matrix.Characters) {
-			stateName := core.DecodeName(t)
+			stateName := utils.DecodeName(t)
 			if stateName == "_" {
 				stateName = ""
 			}
@@ -626,5 +626,5 @@ func (c *CharactersBlock) parseEliminate(s *scanner.Scanner) error {
 
 // normalizeTaxonName resolves NEXUS string rules and enforces case-insensitivity
 func normalizeTaxonName(name string) string {
-	return strings.ToLower(core.DecodeName(name))
+	return strings.ToLower(utils.DecodeName(name))
 }
