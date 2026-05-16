@@ -1,6 +1,10 @@
 # Go Nexus
 
-A modular Go library to parse, manipulate, and generate NEXUS (`.nex`)
+> ⚠️ Notice: This package is currently in an early development state. The API is
+> unstable and subject to breaking changes without prior notice. Use with caution
+> in production environments.
+
+A modular Go library to parse, manipulate, and generate NEXUS (.nex)
 phylogenetic files.
 
 ## Installation
@@ -12,7 +16,7 @@ go get github.com/espinosajuanma/nexus
 ## Usage
 
 The library provides a simple API to read existing files or build new ones from
-scratch.
+scratch. It features a smart wrapper to easily access and manipulate standard blocks.
 
 ### Parsing an existing file
 
@@ -23,11 +27,7 @@ import (
 	"fmt"
 	"os"
 
-	"https://github.com/espinosajuanma/nexus"
-	// Blank imports are required to register block parsers
-	_ "https://github.com/espinosajuanma/nexus/blocks/characters"
-	_ "https://github.com/espinosajuanma/nexus/blocks/taxa"
-	_ "https://github.com/espinosajuanma/nexus/blocks/trees"
+	"github.com/espinosajuanma/nexus"
 )
 
 func main() {
@@ -42,7 +42,13 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Successfully parsed %d blocks\n", len(nex.Blocks))
+	if taxa, ok := nex.GetTaxaBlock(); ok {
+		fmt.Printf("Successfully parsed TAXA block with %d taxa\n", taxa.Dimensions)
+	}
+	
+	if char, ok := nex.GetCharactersBlock(); ok {
+		fmt.Printf("Successfully parsed CHARACTERS block of type %s\n", char.Format.DataType)
+	}
 }
 ```
 
@@ -54,18 +60,24 @@ package main
 import (
 	"os"
 
-	"https://github.com/espinosajuanma/nexus"
-	"https://github.com/espinosajuanma/nexus/blocks/taxa"
+	"github.com/espinosajuanma/nexus"
+	"github.com/espinosajuanma/nexus/blocks/characters"
 )
 
 func main() {
 	nex := nexus.New()
 
 	// Create and attach a TAXA block
-	tb := taxa.New(nex)
+	tb := nex.NewTaxaBlock()
 	tb.SetTitle("My_Taxa")
 	tb.AddTaxon("fish")
 	tb.AddTaxon("frog")
+
+	// Create and attach a CHARACTERS block
+	cb := nex.NewCharactersBlock(characters.Standard)
+	cb.SetTitle("Morphology Matrix")
+	cb.AddTaxon("fish")
+	cb.AddTaxon("frog")
 
 	// Export to stdout (or any io.Writer)
 	nex.Export(os.Stdout)
@@ -74,10 +86,18 @@ func main() {
 
 ## Supported Blocks
 
-The following NEXUS blocks are currently supported and modularized:
+The following NEXUS blocks are currently supported and natively typed:
 
 - `TAXA`
 - `CHARACTERS`
 - `TREES`
 
-Unsupported blocks are safely skipped during parsing.
+Unsupported or custom blocks are safely parsed as generic blocks and can be
+retrieved using GetBlockByName or created using NewUnknownBlock. 
+
+## Exporters
+
+The library also supports rendering NEXUS data into other phylogenetic formats:
+
+- `TNT`
+- `NONA`
